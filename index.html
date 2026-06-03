@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>走访商户助手</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/config.js"></script>
+    <script>
+      window.__APP_CONFIG__ = window.__APP_CONFIG__ || { baiduMapAk: "", coordType: "bd09ll" };
+      window.__BMAP_READY__ = false;
+      window.__BMAP_LOAD_ERROR__ = "";
+      window.__onBMapLoaded = function () {
+        window.__BMAP_READY__ = true;
+      };
+      window.__fallbackScript = function (el) {
+        const raw = el?.dataset?.urls || "";
+        const urls = raw.split("|").filter(Boolean);
+        const i = Number(el.dataset.i || "0");
+        const next = i + 1;
+        if (!urls.length || next >= urls.length) return;
+        const n = document.createElement("script");
+        n.src = urls[next];
+        n.dataset.urls = raw;
+        n.dataset.i = String(next);
+        n.onerror = function () { __fallbackScript(n); };
+        if (el.parentNode) {
+          el.parentNode.insertBefore(n, el);
+          el.parentNode.removeChild(el);
+        } else {
+          document.head.appendChild(n);
+        }
+      };
+      window.addEventListener("load", () => {
+        const ak = window.__APP_CONFIG__?.baiduMapAk || "";
+        if (!ak) return;
+        const s = document.createElement("script");
+        s.src = `https://api.map.baidu.com/api?v=1.0&type=webgl&ak=${encodeURIComponent(
+          ak
+        )}&callback=__onBMapLoaded&s=1`;
+        s.async = true;
+        s.onerror = () => {
+          window.__BMAP_LOAD_ERROR__ = "load_failed";
+        };
+        document.head.appendChild(s);
+
+        setTimeout(() => {
+          if (!window.__BMAP_READY__ && !window.__BMAP_LOAD_ERROR__) {
+            window.__BMAP_LOAD_ERROR__ = "load_timeout";
+          }
+        }, 6500);
+      });
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+      data-urls="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js|https://unpkg.com/papaparse@5.4.1/papaparse.min.js|/vendor/papaparse.min.js"
+      data-i="0"
+      onerror="__fallbackScript(this)"
+    ></script>
+    <script
+      src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+      data-urls="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js|https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js|/vendor/xlsx.full.min.js"
+      data-i="0"
+      onerror="__fallbackScript(this)"
+    ></script>
+  </head>
+  <body>
+    <div class="mobileTopbar">
+      <button id="sidebarToggleBtn" class="sidebarToggle" aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobileBrand">
+        <div class="brandMark"></div>
+        <div class="brandTitle">商户走访助手</div>
+      </div>
+      <div class="mobileSpacer"></div>
+    </div>
+    <div id="sidebarBackdrop" class="sidebarBackdrop hidden"></div>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brandMark"></div>
+          <div class="brandText">
+            <div class="brandTitle">走访商户助手</div>
+            <div class="brandSub">上传·打点·导航·记录·导出</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelTitle">个人信息</div>
+          <label class="field">
+            <div class="fieldLabel">姓名</div>
+            <input id="userNameInput" class="input" placeholder="请输入姓名" />
+          </label>
+        </div>
+
+        <div class="panel">
+          <div class="panelTitle">统计</div>
+          <div class="stats">
+            <div class="stat">
+              <div class="statLabel">总点位</div>
+              <div id="statTotal" class="statValue">0</div>
+            </div>
+            <div class="stat">
+              <div class="statLabel">已完成</div>
+              <div id="statVisited" class="statValue">0</div>
+            </div>
+            <div class="stat">
+              <div class="statLabel">未完成</div>
+              <div id="statUnvisited" class="statValue">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="filterPanel">
+          <div class="panelTitle">筛选条件</div>
+          <div class="filterGrid">
+            <label class="field">
+              <div class="fieldLabel">地市</div>
+              <select id="filterCity" class="select filterSelect">
+                <option value="">全部</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="fieldLabel">区县</div>
+              <select id="filterDistrict" class="select filterSelect">
+                <option value="">全部</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="fieldLabel">商户状态</div>
+              <select id="filterMerchantStatus" class="select filterSelect">
+                <option value="">全部</option>
+              </select>
+            </label>
+            <label class="field">
+              <div class="fieldLabel">是否完成走访</div>
+              <select id="filterVisitState" class="select filterSelect">
+                <option value="">全部</option>
+                <option value="已走访">已走访</option>
+                <option value="未走访">未走访</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelTitle">导出</div>
+          <button id="exportBtn" class="btn btnPrimary" disabled>导出所有POI信息</button>
+          <div class="help">有照片时导出为 .xls（含图片），无照片时导出 .xlsx</div>
+        </div>
+
+        <div class="panel">
+          <div class="panelTitle">点位图例</div>
+          <div class="legend">
+            <div class="legendItem">
+              <span class="dot dotUnvisited"></span>
+              <span>未走访</span>
+            </div>
+            <div class="legendItem">
+              <span class="dot dotVisited"></span>
+              <span>已走访</span>
+            </div>
+            <div class="legendItem">
+              <span class="dot dotException"></span>
+              <span>异常/无法到访</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="topbarRow">
+            <div class="topbarLeft">
+              <span class="title">文件上传</span>
+              <span class="subtitle">支持CSV / Excel（XLSX）</span>
+            </div>
+            <div class="topbarRight">
+              <button id="resetBtn" class="btn">清空当前数据</button>
+            </div>
+          </div>
+          <div class="topbarRow">
+            <input id="fileInput" type="file" class="fileHidden" accept=".csv,.xlsx,.xls" />
+            <label for="fileInput" class="fileBtn">
+              <span class="fileBtnIcon"></span>
+              <span>选择文件</span>
+            </label>
+            <div id="fileNamePill" class="filePill" role="button" tabindex="0">拖拽文件到此处，或点击选择</div>
+            <button id="importBtn" class="btn btnPrimary" disabled>导入并识别</button>
+          </div>
+        </header>
+
+        <section id="uploadCard" class="uploadCard">
+          <div class="uploadCardInner">
+          <div id="fileMeta" class="meta"></div>
+          <div id="mappingBox" class="mapping hidden">
+            <div class="mappingTitle">字段识别结果</div>
+            <div class="mappingGrid">
+              <label class="field">
+                <div class="fieldLabel">商户名称</div>
+                <select id="mapName" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">商户地址</div>
+                <select id="mapAddress" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">经度</div>
+                <select id="mapLng" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">纬度</div>
+                <select id="mapLat" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">地市（可选）</div>
+                <select id="mapCity" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">区县（可选）</div>
+                <select id="mapDistrict" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">商户状态（可选）</div>
+                <select id="mapMerchantStatus" class="select"></select>
+              </label>
+              <label class="field">
+                <div class="fieldLabel">联系电话（可选）</div>
+                <select id="mapPhone" class="select"></select>
+              </label>
+            </div>
+            <div class="mappingActions">
+              <div id="mappingHint" class="hint"></div>
+              <button id="applyMappingBtn" class="btn btnPrimary btnCta" disabled>确认导入并打点</button>
+            </div>
+          </div>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <div class="mapWrap">
+            <div id="map" class="map"></div>
+            <div id="mapOverlay" class="mapOverlay hidden"></div>
+          </div>
+
+          <div class="rightPane">
+            <section id="detailCard" class="card hidden">
+              <div class="cardHeader">
+                <div class="cardTitle">点位详情</div>
+                <div id="detailStatusBadge" class="badge"></div>
+              </div>
+              <div class="kv">
+                <div class="k">名称</div>
+                <div id="detailName" class="v"></div>
+                <div class="k">地址</div>
+                <div id="detailAddress" class="v"></div>
+                <div class="k">地市区县</div>
+                <div id="detailCityDistrict" class="v"></div>
+                <div class="k">经纬度</div>
+                <div id="detailLngLat" class="v mono"></div>
+              </div>
+              <div class="actions">
+                <button id="recordBtn" class="btn btnPrimary" disabled>记录</button>
+                <button id="navBtn" class="btn" disabled>导航</button>
+              </div>
+              <div id="navHint" class="help"></div>
+            </section>
+
+            <section id="recordCard" class="card hidden">
+              <div class="cardHeader">
+                <div class="cardTitle">记录走访</div>
+                <button id="closeRecordBtn" class="btn btnGhost">收起</button>
+              </div>
+              <div class="form">
+                <div class="formBody">
+                <label class="field">
+                  <div class="fieldLabel">商户名称</div>
+                  <input id="editName" class="input" />
+                </label>
+                <label class="field">
+                  <div class="fieldLabel">商户地址</div>
+                  <input id="editAddress" class="input" />
+                </label>
+                <div class="audit">
+                  <div class="auditTitle">准确性确认（必填）</div>
+                  <div class="auditGrid">
+                    <label class="field">
+                      <div class="fieldLabel">商户名称是否准确</div>
+                      <select id="accName" class="select">
+                        <option value="accurate">准确</option>
+                        <option value="inaccurate">不准确</option>
+                        <option value="unknown">不确定</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <div class="fieldLabel">商户地址是否准确</div>
+                      <select id="accAddress" class="select">
+                        <option value="accurate">准确</option>
+                        <option value="inaccurate">不准确</option>
+                        <option value="unknown">不确定</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <div class="fieldLabel">商户经纬度是否准确</div>
+                      <select id="accCoord" class="select">
+                        <option value="accurate">准确</option>
+                        <option value="inaccurate">不准确</option>
+                        <option value="unknown">不确定</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <div class="fieldLabel">走访状态是否准确</div>
+                      <select id="accStatus" class="select">
+                        <option value="accurate">准确</option>
+                        <option value="inaccurate">不准确</option>
+                        <option value="unknown">不确定</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <label class="field">
+                  <div class="fieldLabel">走访状态</div>
+                  <select id="editStatus" class="select">
+                    <option value="未走访">未走访</option>
+                    <option value="已走访">已走访</option>
+                    <option value="无法到访">无法到访</option>
+                    <option value="关停">关停</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <div class="fieldLabel">商户状态</div>
+                  <select id="editMerchantStatus" class="select">
+                    <option value="">-- 暂未填写 --</option>
+                    <option value="正常营业">正常营业</option>
+                    <option value="暂停营业">暂停营业</option>
+                    <option value="尚未开业">尚未开业</option>
+                    <option value="停止营业">停止营业</option>
+                    <option value="模糊上线">模糊上线</option>
+                    <option value="疑似下线">疑似下线</option>
+                    <option value="闭店">闭店</option>
+                    <option value="无法核实">无法核实</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <div class="fieldLabel">商户联系电话</div>
+                  <input id="editPhone" class="input" inputmode="tel" placeholder="商户联系电话（可选）" />
+                </label>
+                <div class="grid2">
+                  <label class="field">
+                    <div class="fieldLabel">经度</div>
+                    <input id="editLng" class="input mono" inputmode="decimal" />
+                  </label>
+                  <label class="field">
+                    <div class="fieldLabel">纬度</div>
+                    <input id="editLat" class="input mono" inputmode="decimal" />
+                  </label>
+                </div>
+                <label class="field">
+                  <div class="fieldLabel">摸排照片</div>
+                  <input id="photoInput" type="file" class="fileHidden" accept="image/*" multiple />
+                  <div class="photoBar">
+                    <label for="photoInput" class="photoBtn">
+                      <span class="photoBtnIcon"></span>
+                      <span>添加照片</span>
+                    </label>
+                    <div id="photoHint" class="photoHint">支持多选；提交后会保存到本地</div>
+                  </div>
+                </label>
+                <div id="photoList" class="photoList"></div>
+                <label class="field">
+                  <div class="fieldLabel">备注</div>
+                  <textarea id="editRemark" class="textarea" rows="4" placeholder="补充说明、到访情况、联系人等"></textarea>
+                </label>
+                </div>
+                <div class="formFooter">
+                  <button id="saveRecordBtn" class="btn btnPrimary btnWide">提交保存</button>
+                  <div id="recordHint" class="hint"></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="emptyRight" class="card">
+              <div class="cardTitle">操作提示</div>
+              <div class="help">
+                1）上传带表头的CSV/Excel<br />
+                2）确认字段识别映射<br />
+                3）地图打点后点选商户<br />
+                4）记录走访或规划导航
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <div id="loadingOverlay" class="loadingOverlay hidden">
+        <div class="loadingContent">
+          <div class="loadingSpinner"></div>
+          <div class="loadingText">正在导入识别中...</div>
+          <div class="loadingSub">正在调用大模型分析表头字段，请稍候</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
