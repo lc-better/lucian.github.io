@@ -1,0 +1,12 @@
+{
+  "name": "visit-poi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "商户走访助手",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
