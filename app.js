@@ -817,6 +817,12 @@ async function openRecord(poi) {
   clearPhotoPreviewUrls();
   await renderPhotoList(poi);
   byId("recordHint").textContent = "";
+  if (isMobileLike()) {
+    requestAnimationFrame(() => {
+      const card = byId("recordCard");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 function closeRecord() {
@@ -1198,15 +1204,11 @@ async function syncPoisToTencentDocs() {
       updatedAt: p.updatedAt || "",
       _orig: typeof p.rowIdx === "number" && state.rawRows[p.rowIdx] ? state.rawRows[p.rowIdx] : {},
     }));
-    const resp = await fetch("/api/td/sync-import", {
+    await fetch("/api/td/sync-import", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ headers: state.headers, rows }),
     });
-    const data = await resp.json().catch(() => ({}));
-    if (data.queued) {
-      setFileMeta("已导入并打点。需要重新映射可点击\u201c清空当前数据\u201d后重新上传。\u2705 数据已排队同步腾讯文档");
-    }
   } catch {}
 }
 

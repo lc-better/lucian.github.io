@@ -1,6 +1,6 @@
 import http from "node:http";
 import os from "node:os";
-import { readFile, stat, writeFile, mkdir, access } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,35 +28,32 @@ const LLM_BASE_URL = process.env.LLM_BASE_URL ?? "https://api.deepseek.com/v1";
 const LLM_API_KEY = process.env.LLM_API_KEY ?? "";
 const LLM_MODEL = process.env.LLM_MODEL ?? "deepseek-chat";
 
+const TD_ACCESS_TOKEN = process.env.TD_ACCESS_TOKEN ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHQiOiJmYzQ4OTc0MjI1YzM0NDU2YjdiMDJlNzVlZWEwYzVjMyIsInR5cCI6MSwiZXhwIjoxNzc5OTU0MjI0Ljk5OTkyNywiaWF0IjoxNzc3MzYyMjI0Ljk5OTkyNywic3ViIjoiZjkwMmI1MjgyZGQ4NDc3NTliNjY5YTk1NzQ0YTk0YTcifQ.zvxLiLr4bxtBKDgvrD7OGMed-2KtuULHVIb9sgRG0wQ";
+const TD_CLIENT_ID = process.env.TD_CLIENT_ID ?? "fc48974225c34456b7b02e75eea0c5c3";
+const TD_OPEN_ID = process.env.TD_OPEN_ID ?? "f902b5282dd847759b669a95744a94a7";
 const TD_FILE_ID = process.env.TD_FILE_ID ?? "DZU1idU5oZ3hKckFs";
 const TD_SHEET_ID = process.env.TD_SHEET_ID ?? "BB08J2";
 
-const SYNC_QUEUE_FILE = join(__dirname, ".sync_queue.json");
-
-async function readSyncQueue() {
-  try {
-    const raw = await readFile(SYNC_QUEUE_FILE, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
+async function callTencentDocs(data) {
+  const url = `https://docs.qq.com/openapi/spreadsheet/v3/files/${TD_FILE_ID}/batchUpdate`;
+  const body = { requests: data };
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Access-Token": TD_ACCESS_TOKEN,
+      "Client-Id": TD_CLIENT_ID,
+      "Open-Id": TD_OPEN_ID,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error(`[TD] V3 batchUpdate error ${resp.status}:`, JSON.stringify(result));
+    throw new Error(`TD_API_${resp.status}`);
   }
+  return result;
 }
-
-async function pushSyncQueue(entry) {
-  let queue;
-  try {
-    const raw = await readFile(SYNC_QUEUE_FILE, "utf8");
-    queue = JSON.parse(raw);
-    if (!Array.isArray(queue)) queue = [];
-  } catch {
-    queue = [];
-  }
-  queue.push({ ...entry, ts: new Date().toISOString() });
-  await writeFile(SYNC_QUEUE_FILE, JSON.stringify(queue, null, 2), "utf8");
-}
-
-const dataDir = join(__dirname, ".data");
-try { await access(dataDir); } catch { await mkdir(dataDir, { recursive: true }); }
 
 async function handleTdSyncImport(req, res) {
   try {
@@ -66,13 +63,30 @@ async function handleTdSyncImport(req, res) {
     const rows = Array.isArray(body.rows) ? body.rows : [];
     if (!rows.length) return json(res, 400, { error: "data_required" });
 
-    const fileName = `import_${Date.now()}.json`;
-    await writeFile(join(dataDir, fileName), JSON.stringify({ headers, rows }, null, 2), "utf8");
-    await pushSyncQueue({ type: "import", file: fileName, headers, count: rows.length });
-    return json(res, 200, { ok: true, count: rows.length, queued: true });
+    const allHeaders = [...headers, "id", "name", "address", "city", "district", "lng", "lat", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const allRows = [allHeaders];
+    for (const r of rows) {
+      allRows.push([
+        ...headers.map((h) => String((r._orig || {})[h] ?? "")),
+        String(r.id ?? ""), String(r.name ?? ""), String(r.address ?? ""),
+        String(r.city ?? ""), String(r.district ?? ""),
+        String(r.lng ?? ""), String(r.lat ?? ""),
+        String(r.visitStatus ?? ""), String(r.merchantStatus ?? ""),
+        String(r.phone ?? ""), String(r.remark ?? ""),
+        String(r.updatedAt ?? ""),
+      ]);
+    }
+
+    await callTencentDocs([{
+      updateSheet: {
+        sheetId: TD_SHEET_ID,
+        resource: { values: allRows },
+      },
+    }]);
+    return json(res, 200, { ok: true, count: rows.length });
   } catch (e) {
-    console.error("[sync] import queue failed:", e.message);
-    return json(res, 500, { error: "sync_queue_failed" });
+    console.error("[TD] sync-import failed:", e.message);
+    return json(res, 500, { error: "td_sync_failed", detail: e.message });
   }
 }
 
@@ -84,11 +98,25 @@ async function handleTdSyncRecord(req, res) {
     const poi = body.poi;
     if (!Number.isFinite(rowIndex) || !poi) return json(res, 400, { error: "data_required" });
 
-    await pushSyncQueue({ type: "record", rowIndex, headerCount: body.headerCount || 0, poi });
-    return json(res, 200, { ok: true, queued: true });
+    const r = rowIndex + 1;
+    const cb = body.headerCount || 0;
+    const cols = ["id", "name", "address", "city", "district", "lng", "lat", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const writeValues = [];
+    for (let c = 0; c < (cb + cols.length); c++) writeValues.push("");
+    for (let i = 0; i < cols.length; i++) {
+      writeValues[cb + i] = String(poi[cols[i]] ?? "");
+    }
+
+    await callTencentDocs([{
+      updateSheet: {
+        sheetId: TD_SHEET_ID,
+        resource: { row: r, values: [writeValues] },
+      },
+    }]);
+    return json(res, 200, { ok: true });
   } catch (e) {
-    console.error("[sync] record queue failed:", e.message);
-    return json(res, 500, { error: "sync_queue_failed" });
+    console.error("[TD] sync-record failed:", e.message);
+    return json(res, 500, { error: "td_sync_failed", detail: e.message });
   }
 }
 
