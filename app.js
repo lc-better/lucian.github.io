@@ -10,6 +10,11 @@ const visitStateColors = {
   selected: "#5BB1FF",
 };
 
+function apiBaseUrl() {
+  const cfg = window.__APP_CONFIG__ || {};
+  return (cfg.apiBaseUrl || "").replace(/\/+$/, "");
+}
+
 function byId(id) {
   const el = document.getElementById(id);
   if (!el) throw new Error(`missing_el:${id}`);
@@ -670,7 +675,7 @@ async function parseFile(file) {
 }
 
 async function identifyColumns(headers, sampleRows) {
-  const resp = await fetch("/api/columns/identify", {
+  const resp = await fetch(`${apiBaseUrl()}/api/columns/identify`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ headers, sampleRows: sampleRows.slice(0, 3), locale: "zh-CN" }),
@@ -1204,7 +1209,7 @@ async function syncPoisToTencentDocs() {
       updatedAt: p.updatedAt || "",
       _orig: typeof p.rowIdx === "number" && state.rawRows[p.rowIdx] ? state.rawRows[p.rowIdx] : {},
     }));
-    await fetch("/api/td/sync-import", {
+    await fetch(`${apiBaseUrl()}/api/td/sync-import`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ headers: state.headers, rows }),
@@ -1217,7 +1222,7 @@ async function syncRecordToTencentDocs(poi) {
     const idx = state.pois.findIndex((p) => p.id === poi.id);
     if (idx < 0) return;
     const visitStateMap = { unvisited: "\u672a\u8d70\u8bbf", visited: "\u5df2\u8d70\u8bbf", exception: "\u5f02\u5e38/\u65e0\u6cd5\u5230\u8bbf" };
-    await fetch("/api/td/sync-record", {
+    await fetch(`${apiBaseUrl()}/api/td/sync-record`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
