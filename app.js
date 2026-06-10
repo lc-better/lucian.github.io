@@ -1232,11 +1232,6 @@ async function syncPoisToTencentDocs() {
     const rows = state.pois.map((p) => ({
       id: p.id,
       name: p.name,
-      address: p.address,
-      city: p.city || "",
-      district: p.district || "",
-      lng: String(p.lng ?? ""),
-      lat: String(p.lat ?? ""),
       visitStatus: visitStateMap[p.visitState] || p.visitState || "",
       merchantStatus: p.merchantStatus || "",
       phone: p.phone || "",
@@ -1272,11 +1267,6 @@ async function syncRecordToTencentDocs(poi) {
         poi: {
           id: poi.id,
           name: poi.name,
-          address: poi.address,
-          city: poi.city || "",
-          district: poi.district || "",
-          lng: String(poi.lng ?? ""),
-          lat: String(poi.lat ?? ""),
           visitStatus: visitStateMap[poi.visitState] || poi.visitState || "",
           merchantStatus: poi.merchantStatus || "",
           phone: poi.phone || "",
