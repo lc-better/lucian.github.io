@@ -93,9 +93,27 @@ body{
 .legend{display:flex;flex-direction:column;gap:8px}
 .legendItem{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
 .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
-.dotUnvisited{background:#6B7AA6}
+.dotUnvisited{background:#3B7DD8}
 .dotVisited{background:var(--accent)}
 .dotException{background:var(--warn)}
+
+.mapRefreshHint{
+  display:none;
+  padding:10px 16px;
+  background:rgba(247,196,84,.12);
+  border:1px solid rgba(247,196,84,.28);
+  border-radius:8px;
+  font-size:13px;
+  color:var(--warn);
+  text-align:center;
+}
+.mapRefreshHint a{
+  color:var(--accent);
+  text-decoration:underline;
+  cursor:pointer;
+}
+
+.dotNonStreet{background:#B56BD9}
 
 .filterGrid{
   display:flex;

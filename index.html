@@ -141,6 +141,14 @@
                 <option value="未走访">未走访</option>
               </select>
             </label>
+            <label class="field">
+              <div class="fieldLabel">是否沿街</div>
+              <select id="filterStreetFacing" class="select filterSelect">
+                <option value="">全部</option>
+                <option value="沿街">沿街</option>
+                <option value="非沿街">非沿街</option>
+              </select>
+            </label>
           </div>
         </div>
 
@@ -164,6 +172,10 @@
             <div class="legendItem">
               <span class="dot dotException"></span>
               <span>异常/无法到访</span>
+            </div>
+            <div class="legendItem">
+              <span class="dot dotNonStreet"></span>
+              <span>非沿街</span>
             </div>
           </div>
         </div>
@@ -240,6 +252,7 @@
 
         <section class="workspace">
           <div class="mapWrap">
+            <div id="mapRefreshHint" class="mapRefreshHint">地图未加载完成？请<a href="javascript:location.reload()">刷新页面</a>重试</div>
             <div id="map" class="map"></div>
             <div id="mapOverlay" class="mapOverlay hidden"></div>
           </div>

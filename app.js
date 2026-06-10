@@ -4,7 +4,7 @@ const storageKeys = {
 };
 
 const visitStateColors = {
-  unvisited: "#6B7AA6",
+  unvisited: "#3B7DD8",
   visited: "#3AE6D1",
   exception: "#F7C454",
   selected: "#5BB1FF",
@@ -64,6 +64,13 @@ function normalizeMerchantStatus(v) {
   const t = String(v ?? "").trim();
   if (!t) return "";
   return merchantStatusMap[t] || t;
+}
+
+function normalizeStreetFacing(v) {
+  const t = String(v ?? "").trim();
+  if (t === "1" || t === "是" || t === "沿街") return "沿街";
+  if (t === "0" || t === "否" || t === "非沿街") return "非沿街";
+  return "";
 }
 
 function toVisitState(status) {
@@ -323,6 +330,7 @@ const state = {
     district: "",
     merchantStatus: "",
     visitState: "",
+    streetFacing: "",
   },
 };
 
@@ -345,7 +353,7 @@ function saveState() {
     mapping: state.mapping || null,
     headers: state.headers || [],
     rawRows: state.pois.length < 2000 ? state.rawRows : [],
-    filters: state.filters || { city: "", district: "", merchantStatus: "", visitState: "" },
+    filters: state.filters || { city: "", district: "", merchantStatus: "", visitState: "", streetFacing: "" },
   };
   localStorage.setItem(storageKeys.state, JSON.stringify(payload));
   postStateToMiniProgram(payload);
@@ -390,7 +398,7 @@ async function loadState() {
     state.mapping = v?.mapping || null;
     state.headers = Array.isArray(v?.headers) ? v.headers : [];
     state.rawRows = Array.isArray(v?.rawRows) ? v.rawRows : [];
-    state.filters = v?.filters || { city: "", district: "", merchantStatus: "", visitState: "" };
+    state.filters = v?.filters || { city: "", district: "", merchantStatus: "", visitState: "", streetFacing: "" };
   } catch {}
 }
 
@@ -441,6 +449,7 @@ function getFilteredPois() {
       if (f.visitState === "visited" && p.visitState === "unvisited") return false;
       if (f.visitState === "unvisited" && p.visitState !== "unvisited") return false;
     }
+    if (f.streetFacing && p.streetFacing !== f.streetFacing) return false;
     return true;
   });
 }
@@ -455,16 +464,20 @@ function updateFilterCounts() {
   const cities = new Set();
   const districts = new Set();
   const merchantStatuses = new Set();
+  const streetFacings = new Set();
   state.pois.forEach((p) => {
     if (p.city) cities.add(p.city);
     if (p.district) districts.add(p.district);
     if (p.merchantStatus) merchantStatuses.add(p.merchantStatus);
+    if (p.streetFacing) streetFacings.add(p.streetFacing);
   });
 
   populateFilterSelect(filterCities, cities, state.filters.city || "");
   populateFilterSelect(filterDistricts, districts, state.filters.district || "");
   populateFilterSelect(filterMerchantStatus, merchantStatuses, state.filters.merchantStatus || "");
   populateFilterSelect(filterVisitState, ["已走访", "未走访"], state.filters.visitState === "visited" ? "已走访" : state.filters.visitState === "unvisited" ? "未走访" : "");
+  const filterStreetFacing = byId("filterStreetFacing");
+  populateFilterSelect(filterStreetFacing, streetFacings, state.filters.streetFacing || "");
 }
 
 function populateFilterSelect(sel, values, currentValue) {
@@ -495,6 +508,10 @@ function restoreFilterUi() {
   if (filterVisitState) {
     const fv = state.filters.visitState;
     filterVisitState.value = fv === "visited" ? "已走访" : fv === "unvisited" ? "未走访" : "";
+  }
+  const filterStreetFacing = byId("filterStreetFacing");
+  if (filterStreetFacing) {
+    filterStreetFacing.value = state.filters.streetFacing || "";
   }
 }
 
@@ -564,11 +581,14 @@ function getMarkerColor(poi) {
   if (poi.id === state.selectedPoiId) return visitStateColors.selected;
   if (poi.visitState === "visited") return visitStateColors.visited;
   if (poi.visitState === "exception") return visitStateColors.exception;
+  if (poi.streetFacing === "非沿街") return "#B56BD9";
   return visitStateColors.unvisited;
 }
 
 function initMap() {
   if (!window.BMapGL) {
+    const el = byId("mapRefreshHint");
+    if (el) el.style.display = "block";
     const ak = window.__APP_CONFIG__?.baiduMapAk || "";
     const reason = window.__BMAP_LOAD_ERROR__ || "";
     const msg = !ak
@@ -583,6 +603,8 @@ function initMap() {
   }
   state.mapReady = true;
   setOverlay("");
+  const el = byId("mapRefreshHint");
+  if (el) el.style.display = "none";
   const map = new BMapGL.Map("map");
   state.map = map;
   const center = new BMapGL.Point(116.404, 39.915);
@@ -746,6 +768,7 @@ function validateMapping() {
 function buildPois(rows, mapping) {
   const pois = [];
   const seen = new Set();
+  const streetFacingCol = state.headers.find((h) => /沿街|商户分类|是否沿街/i.test(h));
   rows.forEach((r, idx) => {
     const name = safeText(r[mapping.name]).trim();
     const address = safeText(r[mapping.address]).trim();
@@ -778,6 +801,7 @@ function buildPois(rows, mapping) {
       merchantStatus,
       phone,
       remark: "",
+      streetFacing: streetFacingCol ? normalizeStreetFacing(String(r[streetFacingCol] ?? "")) : "",
       visitState: toVisitState(status),
       accuracy: { name: "unknown", address: "unknown", coord: "unknown", status: "unknown" },
       photos: [],
@@ -1157,7 +1181,7 @@ function clearAllData() {
     } catch {}
   }
   state.driving = null;
-  state.filters = { city: "", district: "", merchantStatus: "", visitState: "" };
+  state.filters = { city: "", district: "", merchantStatus: "", visitState: "", streetFacing: "" };
   saveState();
   updateStats();
   renderMarkers();
@@ -1188,7 +1212,6 @@ async function applyMappingAndImport() {
   byId("mappingBox").classList.add("hidden");
   byId("uploadCard").classList.add("compact");
   setFileMeta("已导入并打点。需要重新映射可点击\u201c清空当前数据\u201d后重新上传。");
-  syncPoisToTencentDocs();
 }
 
 async function syncPoisToTencentDocs() {
@@ -1209,12 +1232,18 @@ async function syncPoisToTencentDocs() {
       updatedAt: p.updatedAt || "",
       _orig: typeof p.rowIdx === "number" && state.rawRows[p.rowIdx] ? state.rawRows[p.rowIdx] : {},
     }));
-    await fetch(`${apiBaseUrl()}/api/td/sync-import`, {
+    const resp = await fetch(`${apiBaseUrl()}/api/td/sync-import`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ headers: state.headers, rows }),
     });
-  } catch {}
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      console.error("[sync-import] server error:", resp.status, text.slice(0, 200));
+    }
+  } catch (e) {
+    console.error("[sync-import] fetch failed:", e.message || e);
+  }
 }
 
 async function syncRecordToTencentDocs(poi) {
@@ -1222,7 +1251,7 @@ async function syncRecordToTencentDocs(poi) {
     const idx = state.pois.findIndex((p) => p.id === poi.id);
     if (idx < 0) return;
     const visitStateMap = { unvisited: "\u672a\u8d70\u8bbf", visited: "\u5df2\u8d70\u8bbf", exception: "\u5f02\u5e38/\u65e0\u6cd5\u5230\u8bbf" };
-    await fetch(`${apiBaseUrl()}/api/td/sync-record`, {
+    const resp = await fetch(`${apiBaseUrl()}/api/td/sync-record`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -1244,7 +1273,16 @@ async function syncRecordToTencentDocs(poi) {
         },
       }),
     });
-  } catch {}
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      console.error("[sync-record] server error:", resp.status, text.slice(0, 200));
+    }
+  } catch (e) {
+    console.error("[sync-record] fetch failed:", e.message || e);
+    if (!apiBaseUrl()) {
+      console.warn("[sync-record] apiBaseUrl 为空，请确认已在 config.js 中配置 apiBaseUrl 为 SCF 云函数地址。当前走本地 server.mjs 需要机器能访问 docs.qq.com。");
+    }
+  }
 }
 
 function bindEvents() {
@@ -1325,6 +1363,10 @@ function bindEvents() {
   byId("filterVisitState").addEventListener("change", () => {
     const v = byId("filterVisitState").value;
     state.filters.visitState = v === "已走访" ? "visited" : v === "未走访" ? "unvisited" : "";
+    applyFilters();
+  });
+  byId("filterStreetFacing").addEventListener("change", () => {
+    state.filters.streetFacing = byId("filterStreetFacing").value;
     applyFilters();
   });
 
