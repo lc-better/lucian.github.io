@@ -24,11 +24,11 @@ try {
 const port = Number(process.env.PORT ?? 5173);
 const publicRoot = join(__dirname, ".");
 
-const LLM_BASE_URL = process.env.LLM_BASE_URL ?? "https://api.deepseek.com/v1";
+const LLM_BASE_URL = process.env.LLM_BASE_URL ?? "https://api.deepseek.com";
 const LLM_API_KEY = process.env.LLM_API_KEY ?? "";
-const LLM_MODEL = process.env.LLM_MODEL ?? "deepseek-chat";
+const LLM_MODEL = process.env.LLM_MODEL ?? "deepseek-v4-flash";
 
-const TD_ACCESS_TOKEN = process.env.TD_ACCESS_TOKEN ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHQiOiJmYzQ4OTc0MjI1YzM0NDU2YjdiMDJlNzVlZWEwYzVjMyIsInR5cCI6MSwiZXhwIjoxNzc5OTU0MjI0Ljk5OTkyNywiaWF0IjoxNzc3MzYyMjI0Ljk5OTkyNywic3ViIjoiZjkwMmI1MjgyZGQ4NDc3NTliNjY5YTk1NzQ0YTk0YTcifQ.zvxLiLr4bxtBKDgvrD7OGMed-2KtuULHVIb9sgRG0wQ";
+const TD_ACCESS_TOKEN = process.env.TD_ACCESS_TOKEN ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHQiOiJmYzQ4OTc0MjI1YzM0NDU2YjdiMDJlNzVlZWEwYzVjMyIsInR5cCI6MSwiZXhwIjoxNzgzNjc1MTg2LjgwNDk4MiwiaWF0IjoxNzgxMDgzMTg2LjgwNDk4Miwic3ViIjoiZjkwMmI1MjgyZGQ4NDc3NTliNjY5YTk1NzQ0YTk0YTcifQ.iDK-DO-VaFeQFPrQxi8vzkz3ODQ5bKme_OkfTMmFCqs";
 const TD_CLIENT_ID = process.env.TD_CLIENT_ID ?? "fc48974225c34456b7b02e75eea0c5c3";
 const TD_OPEN_ID = process.env.TD_OPEN_ID ?? "f902b5282dd847759b669a95744a94a7";
 const TD_FILE_ID = process.env.TD_FILE_ID ?? "DZU1idU5oZ3hKckFs";
@@ -37,20 +37,30 @@ const TD_SHEET_ID = process.env.TD_SHEET_ID ?? "BB08J2";
 async function callTencentDocs(data) {
   const url = `https://docs.qq.com/openapi/spreadsheet/v3/files/${TD_FILE_ID}/batchUpdate`;
   const body = { requests: data };
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Access-Token": TD_ACCESS_TOKEN,
-      "Client-Id": TD_CLIENT_ID,
-      "Open-Id": TD_OPEN_ID,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Access-Token": TD_ACCESS_TOKEN,
+        "Client-Id": TD_CLIENT_ID,
+        "Open-Id": TD_OPEN_ID,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.error("[TD] fetch to docs.qq.com failed:", e.message, "(cause:", e.cause ? e.cause.message || e.cause : "N/A", ")");
+    throw e;
+  }
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok) {
     console.error(`[TD] V3 batchUpdate error ${resp.status}:`, JSON.stringify(result));
     throw new Error(`TD_API_${resp.status}`);
+  }
+  if (result.code && result.code !== 0) {
+    console.error("[TD] V3 batchUpdate API error:", JSON.stringify(result));
+    throw new Error(`TD_API_CODE_${result.code}`);
   }
   return result;
 }
@@ -107,15 +117,17 @@ async function handleTdSyncRecord(req, res) {
       writeValues[cb + i] = String(poi[cols[i]] ?? "");
     }
 
+    console.log("[TD] sync-record sending row=" + r);
     await callTencentDocs([{
       updateSheet: {
         sheetId: TD_SHEET_ID,
         resource: { row: r, values: [writeValues] },
       },
     }]);
+    console.log("[TD] sync-record OK row=" + r);
     return json(res, 200, { ok: true });
   } catch (e) {
-    console.error("[TD] sync-record failed:", e.message);
+    console.error("[TD] sync-record failed:", e.message, e.cause ? String(e.cause) : "");
     return json(res, 500, { error: "td_sync_failed", detail: e.message });
   }
 }

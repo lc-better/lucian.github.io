@@ -255,19 +255,22 @@ function isMobileLike() {
 }
 
 function buildBaiduNavUrl(origin, dest, destName) {
-  const o = `latlng:${origin.lat},${origin.lng}|name:当前位置`;
   const d = `latlng:${dest.lat},${dest.lng}|name:${encodeURIComponent(destName || "目的地")}`;
   const coordType = (window.__APP_CONFIG__?.coordType || "bd09ll").toLowerCase();
 
   if (isMobileLike()) {
-    return `baidumap://map/direction?origin=${o}&destination=${d}&mode=driving&coord_type=${coordType}&src=webapp.visitpoi`;
+    if (origin) {
+      const o = `latlng:${origin.lat},${origin.lng}|name:当前位置`;
+      return `baidumap://map/direction?origin=${o}&destination=${d}&mode=driving&coord_type=${coordType}&src=webapp.visitpoi`;
+    }
+    return `baidumap://map/direction?destination=${d}&mode=driving&coord_type=${coordType}&src=webapp.visitpoi`;
   }
-  const https = `https://api.map.baidu.com/direction?origin=${encodeURIComponent(
-    `latlng:${origin.lat},${origin.lng}|name:当前位置`
-  )}&destination=${encodeURIComponent(
+  const oPart = origin
+    ? `origin=${encodeURIComponent(`latlng:${origin.lat},${origin.lng}|name:当前位置`)}&`
+    : "";
+  return `https://api.map.baidu.com/direction?${oPart}destination=${encodeURIComponent(
     `latlng:${dest.lat},${dest.lng}|name:${destName || "目的地"}`
   )}&mode=driving&coord_type=${encodeURIComponent(coordType)}&output=html&src=webapp.visitpoi`;
-  return https;
 }
 
 function createDb() {
@@ -317,6 +320,7 @@ const state = {
   pois: [],
   selectedPoiId: null,
   navPlannedForPoiId: null,
+  currentPosition: null,
   driving: null,
   mapReady: false,
   map: null,
@@ -1030,6 +1034,7 @@ async function planRouteToSelectedPoi() {
   if (!ensureMapReady()) return;
 
   const origin = await getCurrentPositionBd09();
+  state.currentPosition = origin;
   const start = new BMapGL.Point(origin.lng, origin.lat);
   const end = new BMapGL.Point(poi.lng, poi.lat);
 
@@ -1045,7 +1050,10 @@ async function planRouteToSelectedPoi() {
 async function jumpToBaiduMapNav() {
   const poi = state.pois.find((p) => p.id === state.selectedPoiId);
   if (!poi) return;
-  const origin = await getCurrentPositionBd09();
+  let origin = state.currentPosition;
+  if (!origin) {
+    try { origin = await getCurrentPositionBd09(); state.currentPosition = origin; } catch {}
+  }
   const url = buildBaiduNavUrl(origin, { lng: poi.lng, lat: poi.lat }, poi.name);
   location.href = url;
 }
@@ -1059,6 +1067,8 @@ async function handleNavClick() {
     else await planRouteToSelectedPoi();
   } catch {
     byId("navHint").textContent = "导航失败：请确认已授权定位，并检查网络与百度地图组件加载情况。";
+    state.navPlannedForPoiId = null;
+    renderDetail();
   } finally {
     byId("navBtn").disabled = false;
   }
@@ -1175,6 +1185,7 @@ function clearAllData() {
   state.pois = [];
   state.selectedPoiId = null;
   state.navPlannedForPoiId = null;
+  state.currentPosition = null;
   if (state.driving) {
     try {
       state.driving.clearResults();
@@ -1204,6 +1215,7 @@ async function applyMappingAndImport() {
   state.pois = poiList;
   state.selectedPoiId = poiList[0]?.id || null;
   state.navPlannedForPoiId = null;
+  state.currentPosition = null;
   saveState();
   updateStats();
   renderMarkers();
