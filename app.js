@@ -1262,9 +1262,16 @@ async function syncRecordToTencentDocs(poi) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
+        rowIndex: idx,
+        headerCount: state.headers ? state.headers.length : 0,
         poi: {
+          id: poi.id,
           name: poi.name,
           visitStatus: visitStateMap[poi.visitState] || poi.visitState || "",
+          merchantStatus: poi.merchantStatus || "",
+          phone: poi.phone || "",
+          remark: poi.remark || "",
+          updatedAt: poi.updatedAt || "",
         },
       }),
     });
