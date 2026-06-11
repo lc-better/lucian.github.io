@@ -73,24 +73,23 @@ async function handleTdSyncImport(req, res) {
     const rows = Array.isArray(body.rows) ? body.rows : [];
     if (!rows.length) return json(res, 400, { error: "data_required" });
 
-    const allHeaders = [...headers, "id", "name", "address", "city", "district", "lng", "lat", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
-    const allRows = [allHeaders];
+    const extCols = ["id", "name", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const allHeaders = [...headers, ...extCols];
+    const gridRows = [
+      { values: allHeaders.map((v) => ({ cellValue: { text: String(v ?? "") } })) },
+    ];
     for (const r of rows) {
-      allRows.push([
-        ...headers.map((h) => String((r._orig || {})[h] ?? "")),
-        String(r.id ?? ""), String(r.name ?? ""), String(r.address ?? ""),
-        String(r.city ?? ""), String(r.district ?? ""),
-        String(r.lng ?? ""), String(r.lat ?? ""),
-        String(r.visitStatus ?? ""), String(r.merchantStatus ?? ""),
-        String(r.phone ?? ""), String(r.remark ?? ""),
-        String(r.updatedAt ?? ""),
-      ]);
+      const vals = [
+        ...headers.map((h) => ({ cellValue: { text: String((r._orig || {})[h] ?? "") } })),
+        ...extCols.map((k) => ({ cellValue: { text: String(r[k] ?? "") } })),
+      ];
+      gridRows.push({ values: vals });
     }
 
     await callTencentDocs([{
-      updateSheet: {
+      updateRangeRequest: {
         sheetId: TD_SHEET_ID,
-        resource: { values: allRows },
+        gridData: { startRow: 1, startColumn: 1, rows: gridRows },
       },
     }]);
     return json(res, 200, { ok: true, count: rows.length });
@@ -108,20 +107,20 @@ async function handleTdSyncRecord(req, res) {
     const poi = body.poi;
     if (!Number.isFinite(rowIndex) || !poi) return json(res, 400, { error: "data_required" });
 
-    const r = rowIndex + 1;
-    const cb = body.headerCount || 0;
-    const cols = ["id", "name", "address", "city", "district", "lng", "lat", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
-    const writeValues = [];
-    for (let c = 0; c < (cb + cols.length); c++) writeValues.push("");
-    for (let i = 0; i < cols.length; i++) {
-      writeValues[cb + i] = String(poi[cols[i]] ?? "");
-    }
+    const r = rowIndex + 2;
+    const headers = Array.isArray(body.headers) ? body.headers : [];
+    const rawRow = body.rawRow || {};
+    const extCols = ["id", "name", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const vals = [
+      ...headers.map((h) => ({ cellValue: { text: String(rawRow[h] ?? "") } })),
+      ...extCols.map((k) => ({ cellValue: { text: String(poi[k] ?? "") } })),
+    ];
 
     console.log("[TD] sync-record sending row=" + r);
     await callTencentDocs([{
-      updateSheet: {
+      updateRangeRequest: {
         sheetId: TD_SHEET_ID,
-        resource: { row: r, values: [writeValues] },
+        gridData: { startRow: r, startColumn: 1, rows: [{ values: vals }] },
       },
     }]);
     console.log("[TD] sync-record OK row=" + r);

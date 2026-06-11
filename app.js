@@ -1263,7 +1263,8 @@ async function syncRecordToTencentDocs(poi) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         rowIndex: idx,
-        headerCount: state.headers ? state.headers.length : 0,
+        headers: state.headers || [],
+        rawRow: typeof poi.rowIdx === "number" && state.rawRows[poi.rowIdx] ? state.rawRows[poi.rowIdx] : {},
         poi: {
           id: poi.id,
           name: poi.name,
