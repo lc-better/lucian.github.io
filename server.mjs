@@ -103,15 +103,15 @@ async function handleTdSyncRecord(req, res) {
   try {
     const raw = await readBody(req);
     const body = JSON.parse(raw || "{}");
-    const rowIndex = Number(body.rowIndex);
+    const rowIndex = typeof body.rowIndex === "number" ? body.rowIndex : Number(body.rowIndex);
     const poi = body.poi;
-    if (!Number.isFinite(rowIndex) || !poi) return json(res, 400, { error: "data_required" });
+    if (!poi) return json(res, 400, { error: "data_required" });
 
     const extCols = ["id", "name", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
     const vals = extCols.map((k) => ({ cellValue: { text: String(poi[k] ?? "") } }));
-    const gridData = { startRow: rowIndex + 1, startColumn: body.headerCount || 0, rows: [{ values: vals }] };
+    const gridData = { startRow: Number.isFinite(rowIndex) ? rowIndex + 1 : 1, startColumn: body.headerCount || 0, rows: [{ values: vals }] };
 
-    console.log("[TD] sync-record row=" + (rowIndex + 1) + " col=" + (body.headerCount || 0));
+    console.log("[TD] sync-record row=" + gridData.startRow + " col=" + gridData.startColumn);
     await callTencentDocs([{ updateRangeRequest: { sheetId: TD_SHEET_ID, gridData } }]);
     console.log("[TD] sync-record OK");
     return json(res, 200, { ok: true });
