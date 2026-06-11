@@ -1262,9 +1262,6 @@ async function syncRecordToTencentDocs(poi) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        rowIndex: idx,
-        headers: state.headers || [],
-        rawRow: typeof poi.rowIdx === "number" && state.rawRows[poi.rowIdx] ? state.rawRows[poi.rowIdx] : {},
         poi: {
           name: poi.name,
           visitStatus: visitStateMap[poi.visitState] || poi.visitState || "",

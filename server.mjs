@@ -103,27 +103,21 @@ async function handleTdSyncRecord(req, res) {
   try {
     const raw = await readBody(req);
     const body = JSON.parse(raw || "{}");
-    const rowIndex = Number(body.rowIndex);
     const poi = body.poi;
-    if (!Number.isFinite(rowIndex) || !poi) return json(res, 400, { error: "data_required" });
+    if (!poi) return json(res, 400, { error: "data_required" });
 
-    const r = rowIndex + 2;
-    const headers = Array.isArray(body.headers) ? body.headers : [];
-    const rawRow = body.rawRow || {};
-    const extCols = ["name", "visitStatus"];
     const vals = [
-      ...headers.map((h) => ({ cellValue: { text: String(rawRow[h] ?? "") } })),
-      ...extCols.map((k) => ({ cellValue: { text: String(poi[k] ?? "") } })),
+      { cellValue: { text: String(poi.name ?? "") } },
+      { cellValue: { text: String(poi.visitStatus ?? "") } },
     ];
+    const gridData = { startRow: 2, startColumn: 1, rows: [{ values: vals }] };
+    const reqBody = JSON.stringify({ requests: [{ updateRangeRequest: { sheetId: TD_SHEET_ID, gridData } }] });
+    console.log("[TD] sync-record req body:", reqBody.slice(0, 300));
 
-    console.log("[TD] sync-record sending row=" + r);
     await callTencentDocs([{
-      updateRangeRequest: {
-        sheetId: TD_SHEET_ID,
-        gridData: { startRow: r, startColumn: 1, rows: [{ values: vals }] },
-      },
+      updateRangeRequest: { sheetId: TD_SHEET_ID, gridData },
     }]);
-    console.log("[TD] sync-record OK row=" + r);
+    console.log("[TD] sync-record OK");
     return json(res, 200, { ok: true });
   } catch (e) {
     console.error("[TD] sync-record failed:", e.message, e.cause ? String(e.cause) : "");
