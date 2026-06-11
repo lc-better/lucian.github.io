@@ -73,7 +73,7 @@ async function handleTdSyncImport(req, res) {
     const rows = Array.isArray(body.rows) ? body.rows : [];
     if (!rows.length) return json(res, 400, { error: "data_required" });
 
-    const extCols = ["id", "name", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const extCols = ["name", "visitStatus"];
     const allHeaders = [...headers, ...extCols];
     const gridRows = [
       { values: allHeaders.map((v) => ({ cellValue: { text: String(v ?? "") } })) },
@@ -110,7 +110,7 @@ async function handleTdSyncRecord(req, res) {
     const r = rowIndex + 2;
     const headers = Array.isArray(body.headers) ? body.headers : [];
     const rawRow = body.rawRow || {};
-    const extCols = ["id", "name", "visitStatus", "merchantStatus", "phone", "remark", "updatedAt"];
+    const extCols = ["name", "visitStatus"];
     const vals = [
       ...headers.map((h) => ({ cellValue: { text: String(rawRow[h] ?? "") } })),
       ...extCols.map((k) => ({ cellValue: { text: String(poi[k] ?? "") } })),

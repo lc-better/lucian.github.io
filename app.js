@@ -1266,13 +1266,8 @@ async function syncRecordToTencentDocs(poi) {
         headers: state.headers || [],
         rawRow: typeof poi.rowIdx === "number" && state.rawRows[poi.rowIdx] ? state.rawRows[poi.rowIdx] : {},
         poi: {
-          id: poi.id,
           name: poi.name,
           visitStatus: visitStateMap[poi.visitState] || poi.visitState || "",
-          merchantStatus: poi.merchantStatus || "",
-          phone: poi.phone || "",
-          remark: poi.remark || "",
-          updatedAt: poi.updatedAt || "",
         },
       }),
     });
