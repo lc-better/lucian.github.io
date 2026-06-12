@@ -237,13 +237,14 @@ function guessMappingByHeuristics(headers) {
       /联系.*话/,
       /联络.*话/,
     ]),
+    dataDate: pick([/商机下发时间/, /下发时间/, /数据日期/, /更新日期/, /导入日期/, /数据更新日期/]),
   };
 }
 
 function coerceMapping(headers, mapping) {
   const set = new Set(headers);
   const fixed = {};
-  for (const k of ["name", "address", "city", "district", "lng", "lat", "merchantStatus", "phone"]) {
+  for (const k of ["name", "address", "city", "district", "lng", "lat", "merchantStatus", "phone", "dataDate"]) {
     const v = mapping?.[k];
     if (typeof v === "string" && set.has(v)) fixed[k] = v;
   }
@@ -263,10 +264,11 @@ async function identifyColumnsWithLLM(headers, sampleRows) {
     "- lat: 纬度（数字）",
     "- merchantStatus: 商户经营状态/营业状态，如正常营业、暂停营业、关停等（如果存在）",
     "- phone: 联系电话/手机号（如果存在）",
+    "- dataDate: 商机下发时间/数据日期/下发时间（如果存在）",
     "",
     "要求：",
     "1) 只输出严格JSON，不要输出任何多余文本。",
-    "2) JSON结构：{ \"mapping\": {\"name\": \"...\", \"address\": \"...\", \"city\": \"...\", \"district\": \"...\", \"lng\": \"...\", \"lat\": \"...\", \"merchantStatus\": \"...\", \"phone\": \"...\" }, \"confidence\": {\"name\":0-1,...}, \"rationale\": \"...\" }",
+    "2) JSON结构：{ \"mapping\": {\"name\": \"...\", \"address\": \"...\", \"city\": \"...\", \"district\": \"...\", \"lng\": \"...\", \"lat\": \"...\", \"merchantStatus\": \"...\", \"phone\": \"...\", \"dataDate\": \"...\" }, \"confidence\": {\"name\":0-1,...}, \"rationale\": \"...\" }",
     "3) 不确定就留空字符串。",
     "",
     `headers=${JSON.stringify(headers)}`,
@@ -332,6 +334,7 @@ async function handleIdentifyColumns(req, res) {
       lat: llmMapping.lat || heuristic.lat,
       merchantStatus: llmMapping.merchantStatus || heuristic.merchantStatus,
       phone: llmMapping.phone || heuristic.phone,
+      dataDate: llmMapping.dataDate || heuristic.dataDate,
     };
 
     const confidence = {

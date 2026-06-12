@@ -321,6 +321,7 @@ const state = {
   selectedPoiId: null,
   navPlannedForPoiId: null,
   currentPosition: null,
+  currentLocationMarker: null,
   driving: null,
   mapReady: false,
   map: null,
@@ -540,6 +541,7 @@ function renderDetail() {
   byId("detailAddress").textContent = poi.address || "";
   byId("detailCityDistrict").textContent = [poi.city, poi.district].filter(Boolean).join(" / ") || "-";
   byId("detailLngLat").textContent = `${poi.lng}, ${poi.lat}`;
+  byId("detailDataDate").textContent = poi.dataDate || "-";
   byId("detailStatusBadge").textContent = statusBadgeText(poi);
   byId("recordBtn").disabled = false;
   byId("navBtn").disabled = false;
@@ -623,11 +625,26 @@ function initMap() {
   renderMarkers();
 
   if (state.pois.length) fitToPois();
+  getCurrentPositionBd09().then((pos) => {
+    state.currentPosition = pos;
+    addCurrentLocationMarker(pos);
+  }).catch(() => {});
 }
 
 function ensureMapReady() {
   if (state.mapReady && state.map) return true;
   return false;
+}
+
+function addCurrentLocationMarker(pos) {
+  if (!state.map || !pos) return;
+  if (state.currentLocationMarker) state.map.removeOverlay(state.currentLocationMarker);
+  const pt = new BMapGL.Point(pos.lng, pos.lat);
+  const icon = new BMapGL.Icon(markerSvg("#FF3B30"), new BMapGL.Size(36, 36), {
+    anchor: new BMapGL.Size(18, 34),
+  });
+  state.currentLocationMarker = new BMapGL.Marker(pt, { icon });
+  state.map.addOverlay(state.currentLocationMarker);
 }
 
 function fitToPois() {
@@ -738,6 +755,7 @@ function setMappingUi(headers, mapping, confidence, llmEnabled) {
   fillSelect(byId("mapLat"), headers, mapping?.lat);
   fillSelect(byId("mapMerchantStatus"), headers, mapping?.merchantStatus);
   fillSelect(byId("mapPhone"), headers, mapping?.phone);
+  fillSelect(byId("mapDataDate"), headers, mapping?.dataDate);
 
   const hint = byId("mappingHint");
   const cn = (x) => (typeof x === "number" ? `${Math.round(x * 100)}%` : "-");
@@ -759,6 +777,7 @@ function getMappingFromUi() {
     lat: byId("mapLat").value || "",
     merchantStatus: byId("mapMerchantStatus").value || "",
     phone: byId("mapPhone").value || "",
+    dataDate: byId("mapDataDate")?.value || "",
   };
 }
 
@@ -783,6 +802,7 @@ function buildPois(rows, mapping) {
     const status = "未走访";
     const merchantStatus = mapping.merchantStatus ? normalizeMerchantStatus(r[mapping.merchantStatus]) : "";
     const phone = mapping.phone ? safeText(r[mapping.phone]).trim() : "";
+    const dataDate = mapping.dataDate ? safeText(r[mapping.dataDate]).trim() : "";
 
     if (lng === null || lat === null) return;
 
@@ -805,6 +825,7 @@ function buildPois(rows, mapping) {
       merchantStatus,
       phone,
       remark: "",
+      dataDate,
       streetFacing: streetFacingCol ? normalizeStreetFacing(String(r[streetFacingCol] ?? "")) : "",
       visitState: toVisitState(status),
       accuracy: { name: "unknown", address: "unknown", coord: "unknown", status: "unknown" },
@@ -1192,6 +1213,11 @@ function clearAllData() {
     } catch {}
   }
   state.driving = null;
+  state.currentPosition = null;
+  if (state.currentLocationMarker) {
+    try { state.map.removeOverlay(state.currentLocationMarker); } catch {}
+    state.currentLocationMarker = null;
+  }
   state.filters = { city: "", district: "", merchantStatus: "", visitState: "", streetFacing: "" };
   saveState();
   updateStats();
