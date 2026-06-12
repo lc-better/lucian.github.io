@@ -73,6 +73,19 @@ function normalizeStreetFacing(v) {
   return "";
 }
 
+function normalizeDateValue(v) {
+  const t = String(v ?? "").trim();
+  if (!t) return "";
+  const n = Number(t);
+  if (Number.isFinite(n) && n > 1 && n < 100000 && !t.includes("-") && !t.includes("/") && !t.includes("年")) {
+    const d = new Date((n - 25569) * 864e5);
+    if (d.getFullYear() > 2000 && d.getFullYear() < 2100) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+  }
+  return t;
+}
+
 function toVisitState(status) {
   const t = String(status ?? "").trim();
   if (!t || t === "未走访") return "unvisited";
@@ -802,7 +815,7 @@ function buildPois(rows, mapping) {
     const status = "未走访";
     const merchantStatus = mapping.merchantStatus ? normalizeMerchantStatus(r[mapping.merchantStatus]) : "";
     const phone = mapping.phone ? safeText(r[mapping.phone]).trim() : "";
-    const dataDate = mapping.dataDate ? safeText(r[mapping.dataDate]).trim() : "";
+    const dataDate = mapping.dataDate ? normalizeDateValue(r[mapping.dataDate]) : "";
 
     if (lng === null || lat === null) return;
 
