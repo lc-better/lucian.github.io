@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作台访问统计 · 发散式分析报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: oklch(0.985 0.006 85);
+  --surface: oklch(0.97 0.008 85);
+  --surface-elevated: oklch(0.95 0.01 85);
+  --border: oklch(0.88 0.008 85);
+  --border-light: oklch(0.92 0.006 85);
+  --text: oklch(0.22 0.008 85);
+  --text-soft: oklch(0.40 0.01 85);
+  --text-muted: oklch(0.55 0.008 85);
+  --text-dim: oklch(0.68 0.006 85);
+
+  --sage: oklch(0.62 0.07 145);
+  --sage-light: oklch(0.80 0.04 145);
+  --sage-bg: oklch(0.92 0.02 145);
+  --rose: oklch(0.62 0.07 20);
+  --rose-light: oklch(0.78 0.05 20);
+  --rose-bg: oklch(0.93 0.02 20);
+  --blue: oklch(0.58 0.06 250);
+  --blue-light: oklch(0.75 0.04 250);
+  --blue-bg: oklch(0.92 0.015 250);
+  --amber: oklch(0.68 0.08 80);
+  --amber-light: oklch(0.82 0.05 80);
+  --amber-bg: oklch(0.94 0.02 80);
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  font-weight: 400;
+}
+
+/* subtle background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, oklch(0.85 0.02 145 / 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, oklch(0.85 0.02 250 / 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, oklch(0.88 0.02 20 / 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── Navigation ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: oklch(0.985 0.006 85 / 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 48px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  overflow-x: auto;
+}
+nav .logo {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sage);
+  letter-spacing: 0.02em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: color 0.25s;
+  position: relative;
+  padding: 0 4px;
+}
+nav a::after {
+  content: '';
+  position: absolute;
+  bottom: -17px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--sage);
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+nav a:hover { color: var(--text); }
+nav a.active { color: var(--sage); }
+nav a.active::after { transform: scaleX(1); }
+
+/* ─── Hero ─── */
+.hero {
+  padding: 120px 48px 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  min-height: 60vh;
+  align-items: center;
+}
+.hero-left {
+  position: relative;
+}
+.hero-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--sage);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: inline-block;
+  padding: 4px 14px;
+  background: var(--sage-bg);
+  border-radius: 20px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 64px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+.hero h1 .sage { color: var(--sage); }
+.hero h1 .rose { color: var(--rose); font-weight: 500; }
+.hero-sub {
+  font-size: 14px;
+  color: var(--text-soft);
+  font-weight: 400;
+  line-height: 1.8;
+  max-width: 440px;
+}
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hero-stat {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+.hero-stat:hover {
+  background: var(--surface-elevated);
+}
+.hero-stat .val {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+}
+.hero-stat .val.sage { color: var(--sage); }
+.hero-stat .val.rose { color: var(--rose); }
+.hero-stat .val.blue { color: var(--blue); }
+.hero-stat .val.amber { color: var(--amber); }
+.hero-stat .lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-align: right;
+}
+.hero-stat .lbl small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+}
+
+/* ─── Section ─── */
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 48px;
+}
+.section-header {
+  margin-bottom: 40px;
+  max-width: 600px;
+}
+.section-number {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sage);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.section h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.section-desc {
+  font-size: 13px;
+  color: var(--text-soft);
+  font-weight: 400;
+  line-height: 1.8;
+}
+
+/* ─── Contradictions ─── */
+.contradictions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.contradiction-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 32px;
+  position: relative;
+  transition: box-shadow 0.2s;
+}
+.contradiction-card:hover {
+  box-shadow: 0 4px 20px oklch(0 0 0 / 0.04);
+}
+.contradiction-card .tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.contradiction-card .tag.t1 { 
+  color: var(--rose); 
+  background: var(--rose-bg);
+}
+.contradiction-card .tag.t2 { 
+  color: var(--amber); 
+  background: var(--amber-bg);
+}
+.contradiction-card .tag.t3 { 
+  color: var(--blue); 
+  background: var(--blue-bg);
+}
+.contradiction-card h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.contradiction-card p {
+  font-size: 13px;
+  color: var(--text-soft);
+  font-weight: 400;
+  line-height: 1.8;
+}
+.contradiction-card .big-number {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.contradiction-card .big-number.red { color: var(--rose); }
+.contradiction-card .big-number.gold { color: var(--amber); }
+.contradiction-card .big-number.teal { color: var(--blue); }
+.contradiction-card .stat-line {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Full width card */
+.contradiction-card.full {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.contradiction-card.full .quadrants {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.contradiction-card.full .quadrant {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.contradiction-card.full .quadrant .q-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: block;
+}
+.contradiction-card.full .quadrant .q-label.high-high { color: var(--sage); }
+.contradiction-card.full .quadrant .q-label.high-low { color: var(--amber); }
+.contradiction-card.full .quadrant .q-label.low-high { color: var(--blue); }
+.contradiction-card.full .quadrant .q-label.low-low { color: var(--text-dim); }
+.contradiction-card.full .quadrant .q-count {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ─── Charts ─── */
+.chart-section {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.chart-section .chart-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.chart-section .chart-title h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chart-section .chart-title .sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.chart-row .chart-section {
+  margin-bottom: 0;
+}
+
+/* ─── Direction Blocks ─── */
+.direction-block {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.direction-block:hover {
+  box-shadow: 0 4px 20px oklch(0 0 0 / 0.04);
+}
+.direction-block::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+}
+.direction-block:nth-child(1)::before { background: var(--rose); }
+.direction-block:nth-child(2)::before { background: var(--amber); }
+.direction-block:nth-child(3)::before { background: var(--blue); }
+.direction-block:nth-child(4)::before { background: var(--rose); }
+.direction-block:nth-child(5)::before { background: var(--amber); }
+.direction-block:nth-child(6)::before { background: var(--blue); }
+
+.direction-inner {
+  padding: 28px 32px 28px 36px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 28px;
+}
+.direction-inner .left {
+  padding-right: 24px;
+  border-right: 1px solid var(--border-light);
+}
+.direction-inner .right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.direction-inner .dir-num {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.direction-inner h3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.direction-inner p {
+  font-size: 13px;
+  color: var(--text-soft);
+  font-weight: 400;
+  line-height: 1.8;
+}
+.direction-inner .highlight { color: var(--rose); font-weight: 500; }
+.direction-inner .highlight2 { color: var(--amber); font-weight: 500; }
+.direction-inner .highlight3 { color: var(--blue); font-weight: 500; }
+.direction-inner .action-box {
+  background: var(--sage-bg);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 6px 6px 0;
+  padding: 16px 20px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.8;
+}
+.direction-inner .action-box strong {
+  color: var(--sage);
+  font-weight: 600;
+}
+
+/* Direction compact table */
+.dir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.dir-table th {
+  text-align: left;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+}
+.dir-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-soft);
+}
+.dir-table td.num { font-variant-numeric: tabular-nums; text-align: right; font-weight: 500; }
+.dir-table .bad { color: var(--rose); }
+.dir-table .warn { color: var(--amber); }
+.dir-table .good { color: var(--sage); }
+
+/* ─── Pull Quote ─── */
+.pull-quote {
+  max-width: 1200px;
+  margin: 32px auto 48px;
+  padding: 40px 48px;
+  background: linear-gradient(135deg, var(--sage-bg), var(--blue-bg));
+  border-radius: 12px;
+  position: relative;
+}
+.pull-quote::before {
+  content: '"';
+  position: absolute;
+  top: 12px; left: 20px;
+  font-family: var(--font-display);
+  font-size: 72px;
+  color: var(--sage);
+  opacity: 0.15;
+  line-height: 1;
+}
+.pull-quote p {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--text);
+  font-weight: 400;
+  padding-left: 36px;
+  font-style: italic;
+}
+.pull-quote .hl-rose { color: var(--rose); font-style: normal; font-weight: 600; }
+.pull-quote .hl-amber { color: var(--amber); font-style: normal; font-weight: 600; }
+.pull-quote .hl-blue { color: var(--blue); font-style: normal; font-weight: 600; }
+
+/* ─── Footer ─── */
+footer {
+  text-align: center;
+  padding: 32px 48px 40px;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+  border-top: 1px solid var(--border-light);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding: 100px 20px 0; min-height: auto; }
+  .hero-right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hero-stat { padding: 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .hero-stat .lbl { text-align: left; }
+  .section { padding: 40px 20px; }
+  .contradictions { grid-template-columns: 1fr; }
+  .contradiction-card.full { grid-template-columns: 1fr; }
+  .direction-inner { grid-template-columns: 1fr; }
+  .direction-inner .left { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border-light); padding-bottom: 16px; }
+  .chart-row { grid-template-columns: 1fr; }
+  nav { padding: 0 16px; }
+  .pull-quote { margin: 24px 16px; padding: 32px 24px; border-radius: 10px; }
+  .pull-quote p { font-size: 15px; padding-left: 24px; }
+  .pull-quote::before { font-size: 48px; top: 8px; left: 12px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">✦ 工作台分析</span>
+  <a href="#contradictions" class="active">核心矛盾</a>
+  <a href="#visuals">数据可视化</a>
+  <a href="#directions">发散方向</a>
+  <a href="#coverage">数据覆盖</a>
+  <a href="#summary">结论</a>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-left">
+    <span class="hero-eyebrow">2026年7月 · 商客经理访问统计</span>
+    <h1>
+      工作台访问统计<br>
+      <span class="sage">发散式</span> <span class="rose">分析报告</span>
+    </h1>
+    <p class="hero-sub">基于31省 + 未知省份的商客经理访问数据，通过6个发散方向揭示数据背后的业务信号与行动启示。工作台优先推荐前端使用，不鼓励后台接入——9省未接入后台符合预期，但其中的前端使用情况冰火两重天。</p>
+  </div>
+  <div class="hero-right">
+    <div class="hero-stat">
+      <div class="val sage">205,155</div>
+      <div class="lbl">总访问次数<small>29天累计</small></div>
+    </div>
+    <div class="hero-stat">
+      <div class="val" style="color:var(--text)">24,914</div>
+      <div class="lbl">总访问人数<small>商客经理</small></div>
+    </div>
+    <div class="hero-stat">
+      <div class="val rose">56.3%</div>
+      <div class="lbl">TOP3 省份占比<small>河南 · 广东 · 辽宁</small></div>
+    </div>
+    <div class="hero-stat">
+      <div class="val blue">8.3</div>
+      <div class="lbl">人均次数 / 29天<small>约合 0.29 次/天</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTRADICTIONS ═══ -->
+<section class="section" id="contradictions">
+  <div class="section-header">
+    <div class="section-number">● 01</div>
+    <h2>三个核心矛盾</h2>
+    <p class="section-desc">数据表面之下的结构性张力，每个矛盾都指向一个具体的管理问题。</p>
+  </div>
+
+  <div class="contradictions">
+    <div class="contradiction-card">
+      <div class="tag t1">矛盾 01</div>
+      <div class="big-number red">1,226×</div>
+      <h3>超级头部 vs 长尾沉默</h3>
+      <p>河南（53,932次）是西藏（44次）的 1,226 倍。河南+广东+辽宁三省贡献全国 56.3% 的访问量，但后10省合计仅占 2.8%。这不是二八分布，而是极端幂律分布。</p>
+      <div class="stat-line">💡 少数省份"点燃了火"，大部分还在冷启动</div>
+    </div>
+    <div class="contradiction-card">
+      <div class="tag t2">矛盾 02</div>
+      <div class="big-number gold">3~7×</div>
+      <h3>人数多 ≠ 活跃度高</h3>
+      <p>山东（613人）人均仅 1.4 次/29天，江苏（972人）人均 4.4 次——而甘肃（575人）人均 9.8 次、福建（554人）人均 9.1 次。人数相近的省份，活跃度差距 3~7 倍。</p>
+      <div class="stat-line">💡 规模≠活跃，激活沉睡大省是最大杠杆</div>
+    </div>
+    <div class="contradiction-card">
+      <div class="tag t3">矛盾 03</div>
+      <div class="big-number teal">0.29</div>
+      <h3>人均活跃度的"天花板"</h3>
+      <p>全国人均 0.29 次/天。河南（12.7次/29天）是最高值，但也远不到每天一次。如果这是核心作业工具，频率太低；如果是周报工具，频率又偏高。</p>
+      <div class="stat-line">💡 产品定位处于"不上不下"的尴尬区间</div>
+    </div>
+    <div class="contradiction-card full">
+      <div>
+        <div class="tag t1">象限分析</div>
+        <h3>四象限：省份分布特征</h3>
+        <p>按"商客经理人数"和"人均访问次数"的中位数划分，31省呈现清晰的四象限分布。</p>
+      </div>
+      <div class="quadrants">
+        <div class="quadrant">
+          <span class="q-label high-high">● 高人数高活跃</span>
+          <span class="q-count">12</span>省<br>
+          河南、广东、辽宁、湖北、江西、重庆、贵州、山西、甘肃、安徽、北京、四川
+        </div>
+        <div class="quadrant">
+          <span class="q-label high-low">● 高人数低活跃</span>
+          <span class="q-count">4</span>省<br>
+          江苏、陕西、广西、山东 ← <strong style="color:var(--amber)">重点激活</strong>
+        </div>
+        <div class="quadrant">
+          <span class="q-label low-high">● 低人数高活跃</span>
+          <span class="q-count">4</span>省<br>
+          福建、上海、浙江、内蒙古
+        </div>
+        <div class="quadrant">
+          <span class="q-label low-low">● 低人数低活跃</span>
+          <span class="q-count">11</span>省<br>
+          黑龙江、河北、新疆、云南、湖南、宁夏、天津、青海、海南、吉林、西藏
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CHARTS ═══ -->
+<section class="section" id="visuals">
+  <div class="section-header">
+    <div class="section-number">● 02</div>
+    <h2>数据可视化</h2>
+    <p class="section-desc">省份间访问分布与活跃度对比，一图胜千言。</p>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-section">
+      <div class="chart-title">
+        <h3>访问次数排名</h3>
+        <span class="sub">TOP15 省份 · 2026年7月</span>
+      </div>
+      <canvas id="barChart" height="260"></canvas>
+    </div>
+    <div class="chart-section">
+      <div class="chart-title">
+        <h3>人均活跃度</h3>
+        <span class="sub">31省 · 次/29天</span>
+      </div>
+      <canvas id="percapChart" height="260"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-title">
+      <h3>访问次数 vs 访问人数 · 偏离分析</h3>
+      <span class="sub">对角线 = 占比一致 · 偏上 = 次数占比高（活跃）</span>
+    </div>
+    <canvas id="scatterChart" height="300"></canvas>
+  </div>
+</section>
+
+<!-- ═══ DIRECTIONS ═══ -->
+<section class="section" id="directions">
+  <div class="section-header">
+    <div class="section-number">● 03</div>
+    <h2>六个发散式方向</h2>
+    <p class="section-desc">每个方向都指向一个具体的业务问题或行动机会。</p>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 01</div>
+        <h3>从"河南模式"萃取可复制的推广方法论</h3>
+        <p>河南是唯一人均超 <span class="highlight">12次</span> 的省份，访问人数（4,259人）和次数（53,932次）均居全国第一。值得深挖三个问题：</p>
+        <p style="margin-top:8px;font-size:13px;color:var(--text-soft);">
+        ① 工作台嵌入在河南商客经理的哪个工作环节？<br>
+        ② 推广是自上而下压指标，还是自下而上解决痛点？<br>
+        ③ 人均高是因为少数人刷了很多次，还是大多数人都在用？
+        </p>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 做一次河南"穿透式"访谈，输出《河南商客经理工作台使用行为画像》，作为其他省份的"对标模板"。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 02</div>
+        <h3>识别"高潜力低活跃"省份，精准激活</h3>
+        <p>四象限中"高人数低活跃"组——<span class="highlight2">江苏、山东、广西、陕西</span>——是最大潜力区。激活到全国均值（8.3次）可带来约 <span class="highlight">14,380 次</span> 增量，相当于河南当前访问量的27%。</p>
+        <table class="dir-table">
+          <thead><tr><th>省份</th><th>人数</th><th>人均次数</th><th>激活潜力</th></tr></thead>
+          <tbody>
+            <tr><td>山东</td><td class="num">613</td><td class="num bad">1.4</td><td class="num highlight">+4,230</td></tr>
+            <tr><td>江苏</td><td class="num">972</td><td class="num warn">4.4</td><td class="num highlight">+3,791</td></tr>
+            <tr><td>广西</td><td class="num">627</td><td class="num warn">2.6</td><td class="num highlight">+3,574</td></tr>
+            <tr><td>陕西</td><td class="num">733</td><td class="num warn">4.5</td><td class="num highlight">+2,785</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 对江苏、山东、广西做"诊断式调研"——是产品不好用？流程不匹配？还是培训不到位？找出根因，针对性整治。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 03</div>
+        <h3>重新审视"低人数低活跃"省份的投放策略</h3>
+        <p>吉林、西藏、青海、海南、宁夏、天津 6省合计仅 <span class="highlight">1,504 次</span>，占全国 0.8%。商客经理人数 26~151 人，自身规模小。</p>
+        <p style="margin-top:12px;font-size:13px;color:var(--text-soft);">
+        <span class="highlight3">① 战略放弃</span> — 资源集中到TOP10+高潜力省份，小省自然增长即可<br>
+        <span class="highlight2">② 差异化</span> — 提供"轻量版"或"微信小程序版"，降低使用门槛
+        </p>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 评估小省推广ROI。如果投入成本 > 增量价值，不如战略性放弃，把资源投到TOP省份的深度运营上。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 04</div>
+        <h3>人均8.3次背后的产品定位问题</h3>
+        <p>全国人均 <span class="highlight">0.29 次/天</span>（工作日约 0.4 次/天），这个频率处于"不上不下"的尴尬区间：</p>
+        <p style="margin-top:12px;font-size:13px;color:var(--text-soft);">
+        🌿 定位 <span class="highlight3">核心作业平台</span> → 频率太低，需深度嵌入业务流程，目标日活 &gt; 50%<br>
+        📋 定位 <span class="highlight2">数据查询辅助工具</span> → 频率合理，重点提升"单次访问价值"<br>
+        🎯 定位 <span class="highlight">管理驾驶舱</span> → 目标用户收窄到团队长/管理者，频率可更低但决策价值更高
+        </p>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 明确产品定位。三个方向各有取舍，但必须选一个明确的方向，不能"既要又要"。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 05</div>
+        <h3>"未知省份"672次访问的线索分析</h3>
+        <p>"未知省份"有 <span class="highlight">672 次访问、218 人</span>参与。这些数据可能是：</p>
+        <p style="margin-top:12px;font-size:13px;color:var(--text-soft);">
+        🔍 技术bug（未能正确解析省份归属）？<br>
+        🔍 VPN/异地登录导致的跨省场景？<br>
+        🔍 测试账号或内部账号？
+        </p>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 排查这672次访问的来源。可能发现技术问题（需修复）、跨省出差场景（产品需求：出差模式？）、或数据清洗问题（需提升数据质量）。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direction-block">
+    <div class="direction-inner">
+      <div class="left">
+        <div class="dir-num">方向 06</div>
+        <h3>活跃度与省份经济/数字化水平的相关性</h3>
+        <p>人均活跃度TOP10中，既有河南（经济中等）、甘肃（经济较弱），也有北京、上海、广东（经济发达）。而浙江、江苏经济发达但活跃度低。</p>
+        <p style="margin-top:12px;font-size:13px;color:var(--text-soft);">
+        → 活跃度 <span class="highlight">与省份经济水平无关</span><br>
+        → 活跃度 <span class="highlight2">可能与推广力度或KPI考核强相关</span><br>
+        → 活跃度 <span class="highlight3">可能与商客经理的客户类型/行业结构有关</span>
+        </p>
+      </div>
+      <div class="right">
+        <div class="action-box"><strong>建议行动：</strong> 拉取客户画像数据（服务客户数、行业分布、客单价），看"高活跃省份"的商客经理群体有什么共同特征——这可能比"方法论复制"更本质。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COVERAGE ═══ -->
+<section class="section" id="coverage">
+  <div class="section-header">
+    <div class="section-number">● 04</div>
+    <h2>使用方式偏好与宣传机会</h2>
+    <p class="section-desc">工作台提供前端和后台两种使用路径，但推广策略有明确偏好——鼓励前端使用，后端仅作为补充。</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;">
+    <div class="chart-section" style="margin-bottom:0;">
+      <div class="chart-title">
+        <h3>🌐 前端使用（推荐）</h3>
+        <span class="sub">通过浏览器直接访问，省分首选方式</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-soft);line-height:1.8;margin-top:8px;">
+        所有省份均可通过浏览器前端直接访问工作台，本次统计的 <strong>205,155 次访问</strong> 即来源于前端。<br><br>
+        前端方式<span style="color:var(--sage);font-weight:500;">无需部署、即开即用</span>，是省分使用工作台的最佳路径。推广策略上，<strong>优先鼓励省分通过前端使用</strong>，降低使用门槛。
+      </p>
+    </div>
+    <div class="chart-section" style="margin-bottom:0;">
+      <div class="chart-title">
+        <h3>📥 后台接入（不鼓励）</h3>
+        <span class="sub">数据拉取到本地，仅作补充方案</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-soft);line-height:1.8;margin-top:8px;">
+        后台接入支持将数据拉到本地进行深度分析，但<span style="color:var(--rose);font-weight:500;">不鼓励省分自行部署后台</span>——维护成本高、数据同步复杂。<br><br>
+        目前 <strong>9 个省份</strong>尚未接入后台，这恰好符合推广策略的预期。关键不在于省分是否接后台，而在于它们<span style="color:var(--amber);font-weight:500;">有没有通过前端"用起来"</span>。
+      </p>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-title">
+      <h3>未接入后台省份 · 前端使用分层</h3>
+      <span class="sub">9 省均未接入后台（符合预期），但前端使用情况冰火两重天</span>
+    </div>
+
+    <!-- 已达标组 -->
+    <div style="margin-bottom:12px;">
+      <div style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;letter-spacing:0.05em;background:var(--sage-bg);color:var(--sage);margin-bottom:10px;">✅ 前端使用活跃 — 已达预期，无需干预</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--sage);">7,099</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">重庆 · 访问次数</div>
+          <div style="font-size:11px;color:var(--sage);font-weight:500;margin-top:2px;">人均 8.9 次 ✓</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--sage);">6,853</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">贵州 · 访问次数</div>
+          <div style="font-size:11px;color:var(--sage);font-weight:500;margin-top:2px;">人均 7.1 次 ✓</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--sage);">5,642</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">甘肃 · 访问次数</div>
+          <div style="font-size:11px;color:var(--sage);font-weight:500;margin-top:2px;">人均 9.8 次 ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 待争取组 -->
+    <div>
+      <div style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;letter-spacing:0.05em;background:var(--rose-bg);color:var(--rose);margin-bottom:10px;">🔔 前端使用不足 — 需要争取和宣传的对象</div>
+      <div style="overflow-x:auto;">
+        <table class="dir-table" style="margin-top:0;">
+          <thead>
+            <tr>
+              <th>省份</th>
+              <th>前端访问次数</th>
+              <th>前端访问人数</th>
+              <th>人均次数/29天</th>
+              <th>与全国均值差距</th>
+              <th>优先级</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>四川</td>
+              <td class="num">4,057</td>
+              <td class="num">708</td>
+              <td class="num warn">5.7</td>
+              <td class="num rose">-2.6</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--rose-bg);color:var(--rose);">高</span></td>
+            </tr>
+            <tr>
+              <td>黑龙江</td>
+              <td class="num">1,895</td>
+              <td class="num">429</td>
+              <td class="num warn">4.4</td>
+              <td class="num rose">-3.9</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--rose-bg);color:var(--rose);">高</span></td>
+            </tr>
+            <tr>
+              <td>河北</td>
+              <td class="num">1,809</td>
+              <td class="num">538</td>
+              <td class="num bad">3.4</td>
+              <td class="num rose">-4.9</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--rose-bg);color:var(--rose);">高</span></td>
+            </tr>
+            <tr>
+              <td>宁夏</td>
+              <td class="num">494</td>
+              <td class="num">151</td>
+              <td class="num bad">3.3</td>
+              <td class="num rose">-5.0</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--amber-bg);color:var(--amber);">中</span></td>
+            </tr>
+            <tr>
+              <td>青海</td>
+              <td class="num">203</td>
+              <td class="num">89</td>
+              <td class="num bad">2.3</td>
+              <td class="num rose">-6.0</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--amber-bg);color:var(--amber);">中</span></td>
+            </tr>
+            <tr>
+              <td>海南</td>
+              <td class="num">186</td>
+              <td class="num">80</td>
+              <td class="num bad">2.3</td>
+              <td class="num rose">-6.0</td>
+              <td><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;background:var(--amber-bg);color:var(--amber);">中</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:16px 20px;background:linear-gradient(135deg,var(--sage-bg),var(--blue-bg));border-radius:8px;font-size:13px;color:var(--text);line-height:1.8;">
+      <strong style="color:var(--sage);">📌 关键洞察：</strong> 重庆、贵州、甘肃虽然未接入后台，但<span style="color:var(--sage);font-weight:500;">前端使用已相当活跃</span>，人均访问量接近或超过全国均值（8.3次），说明"用前端"的推广策略在这三省已见成效。<br><br>
+      而 <strong style="color:var(--rose);">四川、黑龙江、河北</strong> 三省均拥有 <strong>400+ 商客经理</strong>，但人均访问次数仅 <strong>3.4~5.7 次</strong>，远低于全国均值——它们是<span style="color:var(--rose);font-weight:500;">最值得争取的宣传对象</span>。尤其是四川（708人、4,057次），体量大但渗透率低，一次有效的推广活动可能带来显著增量。<br><br>
+      宁夏、青海、海南体量较小，可纳入后续批次，做差异化宣传。
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PULL QUOTE ═══ -->
+
+<!-- ═══ PULL QUOTE ═══ -->
+<div class="pull-quote" id="summary">
+  <p>数据暴露了三个核心问题：<span class="hl-rose">头部过于集中</span>（河南+广东+辽宁占了56%）、<span class="hl-amber">多个大省处于沉睡状态</span>（江苏/山东/广西/湖南人数多但人均极低）、<span class="hl-blue">产品定位不清晰</span>（人均8.3次/29天处于"不上不下"的尴尬区间）。<br><br>
+  此外，9省未接入后台<span class="hl-rose">并非问题</span>——公司本就鼓励前端使用。真正值得关注的是：<span class="hl-amber">四川、黑龙江、河北</span>三省既有较大的商客经理规模，前端使用率却远低于全国均值，是<span class="hl-rose">最需要争取和宣传的对象</span>。而重庆、贵州、甘肃虽未接入后台，前端使用已相当活跃，说明推广策略在这三省已见成效。<br><br>
+  下一步最值钱的行动不是"做更大的推广"，而是 <span class="hl-rose">"先诊断，再激活"</span>——先搞清楚河南为什么好、江苏为什么懒、山东为什么睡，然后用差异化的策略去撬动。同时，<span class="hl-amber">重点出击四川、黑龙江、河北</span>，做好前端使用的宣传引导，让"沉默的大省"真正用起来。</p>
+</div>
+
+<footer>
+  分析时间：2026-08-06 &nbsp;·&nbsp; 数据来源：导出工作台访问统计报表202607xlsx &nbsp;·&nbsp; 分析工具：python + pandas &nbsp;·&nbsp; 鼓励前端使用 · 6省需争取宣传
+</footer>
+
+<script>
+// ─── Data ───
+const provinces = ['河南','广东','辽宁','湖北','江西','重庆','贵州','山西','甘肃','安徽','北京','福建','江苏','四川','陕西','上海','浙江','内蒙古','黑龙江','河北','广西','新疆','云南','湖南','山东','宁夏','天津','青海','海南','吉林','西藏'];
+const visits = [53932,38070,23180,8903,8687,7099,6853,5937,5642,5142,5100,5068,4296,4057,3309,3290,2573,2267,1895,1809,1641,1494,985,920,830,494,447,203,186,130,44];
+const people = [4259,3770,1835,1088,813,802,962,893,575,865,590,554,972,708,733,383,489,401,429,538,627,420,299,530,613,151,135,89,80,93,26];
+const percap = visits.map((v,i) => Math.round((v/people[i])*10)/10);
+
+// ─── Light palette ───
+const sage = '#6ba87a';
+const rose = '#c26a6a';
+const blue = '#5a8ab5';
+const amber = '#c9a04c';
+const bgLight = '#f7f3ee';
+const surfaceLight = '#f0eae2';
+const mutedLight = '#9a8e7e';
+const textLight = '#3a3228';
+
+// ─── Bar Chart ───
+const topN = 15;
+const topProv = provinces.slice(0, topN);
+const topVisits = visits.slice(0, topN);
+const barColors = topVisits.map((v,i) => {
+  if (i === 0) return rose;
+  if (i === 1) return amber;
+  if (i === 2) return '#7a9a8a';
+  return '#d4ccc4';
+});
+
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: topProv,
+    datasets: [{
+      data: topVisits,
+      backgroundColor: barColors,
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: surfaceLight,
+        titleColor: textLight,
+        bodyColor: '#6a5e4e',
+        borderColor: '#d4ccc4',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 6,
+        callbacks: { label: ctx => `访问次数: ${ctx.raw.toLocaleString()}` }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: '#e0d8d0', drawBorder: false },
+        ticks: {
+          color: mutedLight,
+          callback: v => v >= 10000 ? (v/10000).toFixed(0) + '万' : v.toLocaleString()
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: textLight, font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ─── Per Cap Chart ───
+const percapColors = percap.map(v => {
+  if (v >= 10) return rose;
+  if (v >= 7) return amber;
+  if (v >= 4) return '#7a9a8a';
+  return '#d4ccc4';
+});
+
+new Chart(document.getElementById('percapChart'), {
+  type: 'bar',
+  data: {
+    labels: provinces,
+    datasets: [{
+      data: percap,
+      backgroundColor: percapColors,
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: surfaceLight,
+        titleColor: textLight,
+        bodyColor: '#6a5e4e',
+        borderColor: '#d4ccc4',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 6,
+        callbacks: { label: ctx => `人均: ${ctx.raw} 次/29天` }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: '#e0d8d0', drawBorder: false },
+        ticks: { color: mutedLight }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: textLight, font: { size: 9 } }
+      }
+    }
+  }
+});
+
+// ─── Scatter Chart ───
+const totalVisits = 205155;
+const totalPeople = 24914;
+const scatterData = provinces.map((p, i) => ({
+  x: +(people[i] / totalPeople * 100).toFixed(2),
+  y: +(visits[i] / totalVisits * 100).toFixed(2),
+  label: p,
+  percap: percap[i]
+}));
+
+new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      data: scatterData,
+      backgroundColor: scatterData.map(d => {
+        if (d.percap >= 10) return rose;
+        if (d.percap >= 7) return amber;
+        if (d.percap >= 4) return '#7a9a8a';
+        return mutedLight;
+      }),
+      pointRadius: 7,
+      pointHoverRadius: 10,
+      pointBorderColor: 'transparent',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: surfaceLight,
+        titleColor: textLight,
+        bodyColor: '#6a5e4e',
+        borderColor: '#d4ccc4',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 6,
+        callbacks: {
+          title: items => items[0].raw.label,
+          label: ctx => {
+            const d = ctx.raw;
+            return [`访问次数占比: ${d.y.toFixed(1)}%`,`访问人数占比: ${d.x.toFixed(1)}%`,`人均: ${d.percap} 次/29天`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: '访问人数占比 (%)', color: mutedLight, font: { size: 10 } },
+        grid: { color: '#e0d8d0', drawBorder: false },
+        ticks: { color: mutedLight }
+      },
+      y: {
+        title: { display: true, text: '访问次数占比 (%)', color: mutedLight, font: { size: 10 } },
+        grid: { color: '#e0d8d0', drawBorder: false },
+        ticks: { color: mutedLight }
+      }
+    }
+  }
+});
+
+// ─── Nav scroll spy ───
+const sections = ['contradictions','visuals','directions','coverage','summary'];
+const navLinks = document.querySelectorAll('nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+</script>
+</body>
+</html>
