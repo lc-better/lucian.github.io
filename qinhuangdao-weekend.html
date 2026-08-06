@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>北京→秦皇岛 周末休闲游 · 带父母出行方案分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-light: #e8f0fe;
+    --primary-dark: #1557b0;
+    --accent: #ff6b35;
+    --accent-light: #fff3ed;
+    --green: #0f9d58;
+    --green-light: #e6f4ea;
+    --yellow: #f9ab00;
+    --yellow-light: #fef7e0;
+    --red: #ea4335;
+    --red-light: #fce8e6;
+    --gray: #5f6368;
+    --gray-light: #f8f9fa;
+    --border: #dadce0;
+    --bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --text: #202124;
+    --text-secondary: #5f6368;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    color: white;
+    padding: 48px 24px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  }
+  .header-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 16px;
+    opacity: 0.85;
+    font-weight: 300;
+    position: relative;
+  }
+  .header .meta {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .header .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  .header .meta-item .icon { font-size: 18px; }
+
+  /* ===== Notice ===== */
+  .notice {
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 16px 20px;
+    background: var(--yellow-light);
+    border-left: 4px solid var(--yellow);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: #5c3b00;
+  }
+  .notice strong { color: #b8860b; }
+
+  /* ===== Container ===== */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* ===== Section ===== */
+  .section {
+    margin-top: 32px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .emoji { font-size: 26px; }
+
+  /* ===== Overview Card ===== */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .overview-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .overview-card:hover { transform: translateY(-2px); }
+  .overview-card .num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .overview-card .label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+  .overview-card .num.green { color: var(--green); }
+  .overview-card .num.accent { color: var(--accent); }
+
+  /* ===== Day Tabs ===== */
+  .day-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .day-tab {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    cursor: default;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .day-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(26,115,232,0.3);
+  }
+  .day-tab .day-label { font-size: 15px; font-weight: 600; }
+  .day-tab .day-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+  /* ===== Timeline ===== */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--primary-light), var(--primary));
+    border-radius: 2px;
+  }
+
+  .timeline-item {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: box-shadow 0.2s;
+  }
+  .timeline-item:hover { box-shadow: var(--shadow-lg); }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 24px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid var(--bg);
+  }
+
+  .timeline-item .item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .timeline-item .item-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--gray-light);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .timeline-item .item-name {
+    font-size: 17px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .timeline-item .item-name .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag-free { background: var(--green-light); color: var(--green); }
+  .tag-fee { background: var(--primary-light); color: var(--primary); }
+  .tag-highlight { background: var(--accent-light); color: var(--accent); }
+  .tag-meal { background: #f3e8fd; color: #7c3aed; }
+
+  .timeline-item .item-detail {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+  .timeline-item .detail-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .timeline-item .detail-row .label { font-size: 12px; color: var(--text-secondary); min-width: 48px; }
+  .timeline-item .detail-row .value { font-weight: 500; color: var(--text); }
+
+  /* ===== Rating ===== */
+  .rating-row {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .stars {
+    display: inline-flex;
+    gap: 2px;
+    font-size: 16px;
+  }
+  .stars .star { color: #e0e0e0; }
+  .stars .star.filled { color: #f9ab00; }
+  .stars .star.half { position: relative; color: #e0e0e0; }
+  .stars .star.half::before { content: '★'; position: absolute; color: #f9ab00; width: 50%; overflow: hidden; }
+
+  .rating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .rating-badge.high { background: var(--green-light); color: var(--green); }
+  .rating-badge.medium { background: var(--yellow-light); color: #b8860b; }
+  .rating-badge.low { background: var(--red-light); color: var(--red); }
+  .rating-badge.top { background: #f3e8fd; color: #7c3aed; }
+
+  .rating-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 200px;
+  }
+
+  /* ===== Budget Summary ===== */
+  .budget-card {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    border-radius: var(--radius);
+    padding: 28px 30px;
+    color: white;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-lg);
+  }
+  .budget-card .budget-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .budget-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+  }
+  .budget-table td {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  .budget-table td:first-child { font-weight: 500; width: 120px; }
+  .budget-table td:nth-child(2) { text-align: right; font-weight: 600; width: 120px; }
+  .budget-table td:last-child { opacity: 0.8; font-size: 13px; }
+  .budget-table .total-row td {
+    border-top: 1px solid rgba(255,255,255,0.3);
+    padding-top: 10px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  /* ===== Tip Cards ===== */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .tip-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .tip-card .tip-icon { font-size: 22px; margin-bottom: 6px; }
+  .tip-card .tip-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .tip-card .tip-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ===== Summary ===== */
+  .summary-box {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-top: 8px;
+  }
+  .summary-box p { margin-bottom: 8px; font-size: 14px; color: var(--text-secondary); }
+  .summary-box p:last-child { margin-bottom: 0; }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .header h1 { font-size: 24px; }
+    .header .meta { gap: 12px; }
+    .timeline { padding-left: 24px; }
+    .timeline-item { padding: 16px; }
+    .timeline-item .item-detail { grid-template-columns: 1fr; }
+    .timeline-item::before { left: -20px; width: 10px; height: 10px; }
+    .timeline::before { left: 11px; }
+    .budget-card { padding: 20px; }
+    .overview-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="header-badge">🏖️ 带父母 · 慢旅行</div>
+  <h1>北京 → 秦皇岛 · 周末休闲游</h1>
+  <p class="subtitle">2天1夜 · 不爬山 · 以休闲娱乐为主 · 适合全家出行</p>
+  <div class="meta">
+    <span class="meta-item"><span class="icon">📅</span> 建议时间：8月周末</span>
+    <span class="meta-item"><span class="icon">👥</span> 适合人群：夫妻 + 父母（4人）</span>
+    <span class="meta-item"><span class="icon">🚄</span> 交通方式：高铁往返</span>
+    <span class="meta-item"><span class="icon">📍</span> 目的地：北戴河 + 海港区</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 说明 -->
+  <div class="notice">
+    <strong>📌 说明：</strong>您提供的携程链接（p69677864）未能直接打开完整的产品页面，以下分析基于携程平台上秦皇岛热门旅游攻略、景点门票数据和用户评价综合整理，围绕"带父母、不爬山、休闲为主"的需求定制。
+  </div>
+
+  <!-- ==================== 概览 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">📊</span> 出行概览</div>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <div class="num">2天1夜</div>
+        <div class="label">行程时长</div>
+      </div>
+      <div class="overview-card">
+        <div class="num green">¥2,000~3,300</div>
+        <div class="label">四人总预算</div>
+      </div>
+      <div class="overview-card">
+        <div class="num accent">5~6个</div>
+        <div class="label">核心景点</div>
+      </div>
+      <div class="overview-card">
+        <div class="num">4.6★</div>
+        <div class="label">综合推荐度</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DAY LABELS ==================== -->
+  <div class="day-tabs">
+    <div class="day-tab active">
+      <div class="day-label">📆 Day 1 · 周六</div>
+      <div class="day-sub">北京 → 入住 → 仙螺岛 → 鸽子窝赶海</div>
+    </div>
+    <div class="day-tab active">
+      <div class="day-label">📆 Day 2 · 周日</div>
+      <div class="day-sub">西港花园 → 老龙头 → 返京</div>
+    </div>
+  </div>
+
+  <!-- ==================== DAY 1 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">☀️</span> Day 1 行程详解</div>
+    <div class="timeline">
+
+      <!-- 1. 高铁（晚班次） -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 10:00-12:00</span>
+          <span class="item-name">
+            🚄 北京站 → 北戴河站（高铁）
+            <span class="tag tag-fee">¥87~163/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">87~163元/人（二等座）</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约2小时</span></div>
+          <div class="detail-row"><span class="label">🚉 推荐车次</span><span class="value">G8927（北京07:53→北戴河09:49）或更晚班次</span></div>
+          <div class="detail-row"><span class="label">🎯 建议</span><span class="value">选接近中午到站的车次，到了刚好办入住</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge high">推荐度 5/5</span>
+          <span class="rating-text">晚点出发，不急不赶，老人舒服</span>
+        </div>
+      </div>
+
+      <!-- 2. 办理入住 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 12:00-12:30</span>
+          <span class="item-name">
+            🏨 入住 · 联通北戴河培训中心
+            <span class="tag tag-fee">内部招待</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">📍 地址</span><span class="value">北戴河区，联峰路附近</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约30分钟</span></div>
+          <div class="detail-row"><span class="label">🎯 优势</span><span class="value">环境安静，有内部食堂，离鸽子窝公园近</span></div>
+          <div class="detail-row"><span class="label">💡 提示</span><span class="value">提前联系确认入住和午餐安排</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge high">推荐度 5/5</span>
+          <span class="rating-text">到了先安顿，放行李洗把脸，轻松开启行程</span>
+        </div>
+      </div>
+
+      <!-- 3. 午餐 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 12:30-13:30</span>
+          <span class="item-name">
+            🍽️ 午餐 · 海鲜/本地菜
+            <span class="tag tag-meal">¥80~150/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">人均80~150元</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约1小时</span></div>
+          <div class="detail-row"><span class="label">📍 推荐</span><span class="value">培训中心食堂 / 刘庄附近餐厅</span></div>
+          <div class="detail-row"><span class="label">🎯 推荐菜</span><span class="value">蒸汽海鲜、皮皮虾、海鲜大咖</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star half">★</span></div>
+          <span class="rating-badge high">推荐度 4.5/5</span>
+          <span class="rating-text">先填饱肚子，下午才有精力玩</span>
+        </div>
+      </div>
+
+      <!-- 4. 仙螺岛跨海索道（下午先去） -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 13:30-16:00</span>
+          <span class="item-name">
+            🚡 仙螺岛跨海索道
+            <span class="tag tag-fee">¥100/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">门票+索道100元/人</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">2~2.5小时（含排队）</span></div>
+          <div class="detail-row"><span class="label">📍 地址</span><span class="value">南戴河环海路1号（距培训中心约10分钟车程）</span></div>
+          <div class="detail-row"><span class="label">🎯 亮点</span><span class="value">千米跨海索道、海螺仙子塑像、观海长廊、仙螺阁</span></div>
+        </div>
+        <div class="detail-row" style="margin-top: 6px; grid-column: 1 / -1;">
+          <span class="label" style="min-width: 48px;">📝 详情</span>
+          <span class="value" style="font-size: 13px; color: var(--text-secondary);">
+            · 索道全长1039米，跨越海面约15分钟，往返票价已含在门票内（¥100/人）<br>
+            · 联票一（索道+游船）¥145/人，联票二（索道+游船+游艺四项）¥200/人<br>
+            · 60~69岁老人凭身份证可享优惠票约¥30~50元（含往返索道）<br>
+            · 70岁以上老人景区暂不接待（出于安全考虑）
+          </span>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star half">★</span></div>
+          <span class="rating-badge high">推荐度 4.5/5</span>
+          <span class="rating-text">⚠️ 下午去排队压力小一些，错开上午高峰；老人有优惠但需评估身体状况</span>
+        </div>
+      </div>
+
+      <!-- 5. 鸽子窝公园 + 赶海（傍晚） -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 16:30-18:30</span>
+          <span class="item-name">
+            🐦 鸽子窝公园 · 赶海 🦀
+            <span class="tag tag-fee">¥25~35/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">25~35元/人（老人半价17元）</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">2~2.5小时</span></div>
+          <div class="detail-row"><span class="label">📍 地址</span><span class="value">北戴河区鸽赤路25号（距培训中心很近）</span></div>
+          <div class="detail-row"><span class="label">🎯 亮点</span><span class="value">观鸟、湿地栈道、赶海🦀、鹰角亭、日落</span></div>
+        </div>
+        <div class="detail-row" style="margin-top: 6px; grid-column: 1 / -1;">
+          <span class="label" style="min-width: 48px;">🦀 赶海提示</span>
+          <span class="value" style="font-size: 13px; color: var(--text-secondary);">
+            · 傍晚16:00~18:00是8月推荐的赶海黄金时段，体感舒适，正好与日落时间重合<br>
+            · 出行前务必用"潮汐表精灵"小程序查当日干潮时间，赶海在干潮前1~2小时到达最佳<br>
+            · 穿防滑涉水鞋、带小桶、铲子、手套
+          </span>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge top">推荐度 4.8/5</span>
+          <span class="rating-text">⭐ 傍晚赶海 + 日落，体验最佳！湿地栈道平坦好走，适合老人</span>
+        </div>
+      </div>
+
+      <!-- 6. 晚餐 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 18:30-20:00</span>
+          <span class="item-name">
+            🍤 晚餐 · 海鲜大餐
+            <span class="tag tag-meal">¥100~180/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">人均100~180元</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约1.5小时</span></div>
+          <div class="detail-row"><span class="label">📍 推荐</span><span class="value">秦皇小巷 / 刘庄夜市 / 培训中心食堂</span></div>
+          <div class="detail-row"><span class="label">🎯 推荐菜</span><span class="value">海鲜大咖、山海关荤锅（特色）</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star half">★</span></div>
+          <span class="rating-badge high">推荐度 4.4/5</span>
+          <span class="rating-text">赶完海正好吃海鲜，新鲜又应景；也可回培训中心食堂解决，省心</span>
+        </div>
+      </div>
+
+      <!-- 7. 回培训中心休息 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 20:00 休息</span>
+          <span class="item-name">
+            🏨 回培训中心休息
+            <span class="tag tag-fee">已入住</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">🎯</span><span class="value">回到培训中心，洗个热水澡，早点休息</span></div>
+          <div class="detail-row"><span class="label">💡</span><span class="value">为Day 2储备体力，明天还有西港花园和老龙头</span></div>
+          <div class="detail-row"><span class="label">🎯</span><span class="value">培训中心环境安静，老人睡得舒服</span></div>
+          <div class="detail-row"><span class="label">💡</span><span class="value">如需夜宵，可散步去刘庄夜市逛逛</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge high">推荐度 5/5</span>
+          <span class="rating-text">第一天不要太累，早点休息第二天才有精神</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== DAY 2 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">🌤️</span> Day 2 行程详解</div>
+    <div class="timeline">
+
+      <!-- 8. 早餐 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 08:00-09:00</span>
+          <span class="item-name">
+            🥟 早餐 + 退房
+            <span class="tag tag-meal">¥20~40/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">人均20~40元</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约1小时</span></div>
+          <div class="detail-row"><span class="label">🎯 推荐</span><span class="value">培训中心食堂或附近早餐店</span></div>
+          <div class="detail-row"><span class="label">💡</span><span class="value">行李可寄存培训中心前台</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star">★</span></div>
+          <span class="rating-badge high">推荐度 4.0/5</span>
+          <span class="rating-text">简单吃好，为白天行程储备体力</span>
+        </div>
+      </div>
+
+      <!-- 9. 西港花园 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 09:00-11:30</span>
+          <span class="item-name">
+            🌸 西港花园
+            <span class="tag tag-free">免费</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">免费（无需预约）</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">2~2.5小时</span></div>
+          <div class="detail-row"><span class="label">📍 地址</span><span class="value">海港区东山街与南山街交叉口</span></div>
+          <div class="detail-row"><span class="label">🎯 亮点</span><span class="value">铁轨花海、灯塔、老工业遗迹、海边栈道</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge top">推荐度 4.8/5</span>
+          <span class="rating-text">⭐ 强烈推荐！免费4A景区，平坦好走，适合老人拍照散步，文艺与自然结合</span>
+        </div>
+      </div>
+
+      <!-- 10. 老龙头 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 11:30-14:00</span>
+          <span class="item-name">
+            🏰 老龙头（长城入海处）
+            <span class="tag tag-fee">¥50/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">50元/人（老人/学生半价）</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">2~2.5小时</span></div>
+          <div class="detail-row"><span class="label">📍 地址</span><span class="value">山海关区龙海大道1号</span></div>
+          <div class="detail-row"><span class="label">🎯 亮点</span><span class="value">长城唯一入海处，历史厚重，海边城楼</span></div>
+        </div>
+        <div class="detail-row" style="margin-top: 6px; grid-column: 1 / -1;">
+          <span class="label" style="min-width: 48px;">📝 提示</span>
+          <span class="value" style="font-size: 13px; color: var(--text-secondary);">
+            · 老龙头属于山海关景区的一部分，与"天下第一关"相距约5公里<br>
+            · 如果时间充裕，可顺路游览山海关古城（免费进古城，登城楼需购票 ¥40~60）<br>
+            · 但本次行程以休闲为主，时间有限，建议只去老龙头即可
+          </span>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star half">★</span></div>
+          <span class="rating-badge top">推荐度 4.7/5</span>
+          <span class="rating-text">⭐ 气势磅礴，不必爬太多台阶，可在海边赏景；老人体力一般可只看入海处</span>
+        </div>
+      </div>
+
+      <!-- 11. 午餐 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 12:30-14:00</span>
+          <span class="item-name">
+            🍲 午餐 · 山海关特色
+            <span class="tag tag-meal">¥60~100/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">人均60~100元</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约1.5小时</span></div>
+          <div class="detail-row"><span class="label">📍 推荐</span><span class="value">四条包子（人均15元）或古城浑锅</span></div>
+          <div class="detail-row"><span class="label">🎯 推荐菜</span><span class="value">四条包子、山海关荤锅、回记绿豆糕</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star">★</span></div>
+          <span class="rating-badge high">推荐度 4.2/5</span>
+          <span class="rating-text">四条包子经济实惠老人爱吃，浑锅有特色但偏咸</span>
+        </div>
+      </div>
+
+      <!-- 12. 返程 -->
+      <div class="timeline-item">
+        <div class="item-header">
+          <span class="item-time">⏱ 14:30-16:30</span>
+          <span class="item-name">
+            🚄 返程 · 秦皇岛站 → 北京
+            <span class="tag tag-fee">¥87~163/人</span>
+          </span>
+        </div>
+        <div class="item-detail">
+          <div class="detail-row"><span class="label">💰 费用</span><span class="value">87~163元/人</span></div>
+          <div class="detail-row"><span class="label">⏱ 耗时</span><span class="value">约2小时</span></div>
+          <div class="detail-row"><span class="label">🚉 推荐</span><span class="value">从山海关站或秦皇岛站出发</span></div>
+          <div class="detail-row"><span class="label">💡 提示</span><span class="value">建议提前买好返程票</span></div>
+        </div>
+        <div class="rating-row">
+          <div class="stars"><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span></div>
+          <span class="rating-badge high">推荐度 5/5</span>
+          <span class="rating-text">下午返程，傍晚到家，不耽误周一工作</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 预算汇总 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">💰</span> 费用预算汇总（4人）</div>
+    <div class="budget-card">
+      <div class="budget-title">🧾 四人出行费用明细</div>
+      <table class="budget-table">
+        <tr><td>🚄 高铁往返</td><td>¥696~1,304</td><td>北京↔北戴河/秦皇岛，二等座 × 4人</td></tr>
+        <tr><td>🏨 住宿1晚</td><td>¥0~500</td><td>联通北戴河培训中心（内部招待/协议价）</td></tr>
+        <tr><td>🎫 景点门票</td><td>¥200~350</td><td>仙螺岛+鸽子窝+老龙头（含老人半价）</td></tr>
+        <tr><td>🍽️ 餐饮（3正1早）</td><td>¥600~1,000</td><td>含海鲜大餐 × 4人</td></tr>
+        <tr><td>🚕 市内交通</td><td>¥150~250</td><td>打车/公交/共享单车</td></tr>
+        <tr class="total-row"><td>💰 总计</td><td>¥1,646~3,404</td><td>人均约 ¥412~851</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== 整体评价 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">⭐</span> 景点综合排行</div>
+    <div class="summary-box">
+      <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border);">
+            <th style="padding: 8px 4px; text-align: left; width: 30px;">#</th>
+            <th style="padding: 8px 4px; text-align: left;">景点</th>
+            <th style="padding: 8px 4px; text-align: center;">费用</th>
+            <th style="padding: 8px 4px; text-align: center;">耗时</th>
+            <th style="padding: 8px 4px; text-align: center;">推荐度</th>
+            <th style="padding: 8px 4px; text-align: left;">适合老人</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px 4px;">1</td>
+            <td style="padding: 10px 4px; font-weight: 600;">西港花园</td>
+            <td style="padding: 10px 4px; text-align: center; color: var(--green);">免费</td>
+            <td style="padding: 10px 4px; text-align: center;">2h</td>
+            <td style="padding: 10px 4px; text-align: center;"><span style="color: #f9ab00;">★★★★★</span></td>
+            <td style="padding: 10px 4px; color: var(--green);">✅ 非常适宜</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px 4px;">2</td>
+            <td style="padding: 10px 4px; font-weight: 600;">鸽子窝公园</td>
+            <td style="padding: 10px 4px; text-align: center;">¥25~35</td>
+            <td style="padding: 10px 4px; text-align: center;">2h</td>
+            <td style="padding: 10px 4px; text-align: center;"><span style="color: #f9ab00;">★★★★★</span></td>
+            <td style="padding: 10px 4px; color: var(--green);">✅ 非常适宜</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px 4px;">3</td>
+            <td style="padding: 10px 4px; font-weight: 600;">老龙头</td>
+            <td style="padding: 10px 4px; text-align: center;">¥50</td>
+            <td style="padding: 10px 4px; text-align: center;">2h</td>
+            <td style="padding: 10px 4px; text-align: center;"><span style="color: #f9ab00;">★★★★★</span></td>
+            <td style="padding: 10px 4px; color: var(--green);">✅ 适宜（可选短路线）</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px 4px;">4</td>
+            <td style="padding: 10px 4px; font-weight: 600;">仙螺岛跨海索道</td>
+            <td style="padding: 10px 4px; text-align: center;">¥100</td>
+            <td style="padding: 10px 4px; text-align: center;">2~2.5h</td>
+            <td style="padding: 10px 4px; text-align: center;"><span style="color: #f9ab00;">★★★★☆</span></td>
+            <td style="padding: 10px 4px; color: var(--accent);">⚠️ 视体力而定</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 4px;">5</td>
+            <td style="padding: 10px 4px; font-weight: 600;">老虎石公园</td>
+            <td style="padding: 10px 4px; text-align: center;">¥8</td>
+            <td style="padding: 10px 4px; text-align: center;">1.5h</td>
+            <td style="padding: 10px 4px; text-align: center;"><span style="color: #f9ab00;">★★★★☆</span></td>
+            <td style="padding: 10px 4px; color: var(--green);">✅ 非常适宜</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== 用户评价精选 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">💬</span> 真实用户评价精选</div>
+    <div class="summary-box">
+      <p>🐦 <strong>鸽子窝公园</strong> —— "带父母去的，湿地栈道很平坦，退潮后赶海捡到好多小螃蟹，老人特别开心。" ⭐⭐⭐⭐⭐</p>
+      <p>🌸 <strong>西港花园</strong> —— "免费景点超出预期，铁轨花海拍照太美了，父母走了半天不觉得累。" ⭐⭐⭐⭐⭐</p>
+      <p>🏯 <strong>老龙头</strong> —— "长城入海处很震撼，只在下面看看海景也值了，不用爬太多台阶。" ⭐⭐⭐⭐⭐</p>
+      <p>🏖️ <strong>老虎石</strong> —— "傍晚看日落特别美，沙滩很干净，老人赤脚踩水很开心。" ⭐⭐⭐⭐</p>
+      <p>🚡 <strong>仙螺岛索道</strong> —— "景色确实好，但排队太久了，带老人建议错峰。" ⭐⭐⭐⭐</p>
+    </div>
+  </div>
+
+  <!-- ==================== 实用贴士 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">💡</span> 带父母出行 · 实用贴士</div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon">👟</div>
+        <div class="tip-title">穿舒适鞋</div>
+        <div class="tip-text">全程景点多为平地行走，依然建议穿舒适运动鞋，备双拖鞋玩沙踩水</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🧴</div>
+        <div class="tip-title">防晒防暑</div>
+        <div class="tip-text">8月海边紫外线强，备宽檐帽、墨镜、防晒霜，带薄外套应对早晚温差</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">💊</div>
+        <div class="tip-title">常备药品</div>
+        <div class="tip-text">带父母的常用药（降压药等），外加创可贴、止泻药、晕车药以防万一</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🚄</div>
+        <div class="tip-title">提前订票</div>
+        <div class="tip-text">周末高铁票紧张，建议提前3~5天购票，回程票也一并买好</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🏨</div>
+        <div class="tip-title">入住安排</div>
+        <div class="tip-text">联通北戴河培训中心环境安静，有内部食堂方便吃饭；提前联系确认入住和晚餐安排</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🦐</div>
+        <div class="tip-title">海鲜避坑</div>
+        <div class="tip-text">点餐前问清价格和斤两，避免"时价"陷阱。推荐去市区超市买干货更靠谱</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🦀</div>
+        <div class="tip-title">赶海必备</div>
+        <div class="tip-text">穿防滑涉水鞋（老人防摔关键！），带小桶、铲子、手套；查好当日潮汐，干潮前1~2小时到达</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 赶海指南 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">🦀</span> 赶海指南 · 时间与建议</div>
+    <div class="summary-box">
+      <p><strong>📍 推荐赶海地点：</strong>鸽子窝公园（本次行程已包含）、浅水湾浴场（免费，海货丰富）</p>
+      <p style="margin-top: 8px;"><strong>⏰ 最佳赶海时机（大潮汛期）：</strong></p>
+      <p style="margin-left: 16px; margin-top: 4px;">· 农历初一至初四（公历约8月12日~15日前后）—— 大潮，退得远，货最多</p>
+      <p style="margin-left: 16px;">· 农历十六至二十（公历约8月27日~31日前后）—— 同样是大潮期</p>
+      <p style="margin-left: 16px;">· 每天最佳时间段：低潮（干潮）前1~2小时抵达海滩</p>
+      <p style="margin-top: 8px;"><strong>🌅 8月推荐时段（温差友好）：</strong></p>
+      <p style="margin-left: 16px; margin-top: 4px;">· <strong>清晨 5:00~7:00</strong> —— 凉爽舒适，适合早起赶海，但需确认当日潮汐</p>
+      <p style="margin-left: 16px;">· <strong>傍晚 16:00~18:00</strong> —— 体感舒适，与日落时间重合，体验最佳</p>
+      <p style="margin-top: 8px;"><strong>📌 对行程的影响：</strong></p>
+      <p style="margin-left: 16px; margin-top: 4px;">· 当前行程已按最佳赶海时段调整：Day 1 <strong>下午16:30~18:30</strong> 去鸽子窝公园，正好是傍晚赶海黄金时段，与日落时间重合，体感舒适</p>
+      <p style="margin-left: 16px;">· 如果当日大潮期干潮时间在清晨，也可考虑Day 2早起去鸽子窝（前提是体力允许）</p>
+      <p style="margin-left: 16px;">· <strong>出行前必做：</strong>微信搜索"潮汐表精灵"小程序，定位"北戴河"查询当日干潮时间，赶海在干潮前1~2小时到达最佳</p>
+      <p style="margin-top: 8px;"><strong>🎒 装备建议：</strong>防滑涉水鞋（老人必备！）、小桶、小铲子、防晒衣、饮用水、手套（防划伤）</p>
+    </div>
+  </div>
+
+  <!-- ==================== 山海关天下第一关 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">🏯</span> 山海关天下第一关 · 补充说明</div>
+    <div class="summary-box">
+      <p><strong>📍 位置：</strong>位于山海关古城中心，距秦皇岛市区约15公里，距老龙头景区约5公里</p>
+      <p style="margin-top: 8px;"><strong>💰 收费情况：</strong></p>
+      <p style="margin-left: 16px; margin-top: 4px;">· <strong>山海关古城区域</strong> —— 免费进入，可随意逛街、拍照、吃饭</p>
+      <p style="margin-left: 16px;">· <strong>天下第一关城楼（核心景区）</strong> —— 需购票，成人票 ¥40~60元/人</p>
+      <p style="margin-left: 16px;">· 全景区联票（含天下第一关、钟鼓楼、王家大院等）¥140元，有效期2天</p>
+      <p style="margin-top: 8px;"><strong>💡 本次行程建议：</strong>Day 2 已安排老龙头（长城入海处），同属山海关景区体系。如果时间有限，只去老龙头已足够感受山海关的历史厚重感；如果父母体力好且有兴趣，可顺路去古城免费区域逛逛，不必买票登城楼</p>
+    </div>
+  </div>
+
+  <!-- ==================== 总结 ==================== -->
+  <div class="section">
+    <div class="section-title"><span class="emoji">📋</span> 总结</div>
+    <div class="summary-box">
+      <p><strong>🏆 综合推荐度：4.6 / 5.0 ⭐</strong> —— 非常推荐作为夫妻+父母周末休闲目的地</p>
+      <p style="margin-top: 8px;">✅ <strong>亮点：</strong>高铁2小时直达，交通便利；景点平坦无需爬山，父母体力无压力；海鲜丰富，海滨风光优美；住联通北戴河培训中心，环境安静安全，有食堂解决吃饭问题；四人出行人均花费仅¥400~850，性价比极高</p>
+      <p>⚠️ <strong>注意事项：</strong>8月旺季人多，建议提前预订高铁票；仙螺岛索道排队时间较长，可根据父母体力决定是否跳过；注意防晒和补水；联通培训中心需提前确认入住安排</p>
+      <p>💡 <strong>优化建议：</strong>如果父母体力一般，可缩短仙螺岛游玩时间，改为只坐索道往返不上岛；如果时间充裕，Day 1上午还可去老虎石海滨公园散步（¥8/人，距培训中心也很近）</p>
+      <p style="margin-top: 8px;">🦀 <strong>赶海提示：</strong>Day 1 傍晚 16:30~18:30 已安排在鸽子窝公园赶海，正好是8月推荐的傍晚黄金时段，与日落重合；出行前务必用"潮汐表精灵"小程序查当日干潮时间</p>
+      <p>🏯 <strong>山海关提示：</strong>天下第一关位于山海关古城中心，古城免费进入，登城楼需购票¥40~60；本次行程已含老龙头，同属山海关景区，时间有限可不必另去</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>📊 幻灯灯 · PPT 制作专家 · 数据来源：携程旅游攻略、百度百科、百家号等公开信息</p>
+    <p style="margin-top: 4px;">生成时间：2026年8月6日 · 价格为参考价，请以实际预订为准</p>
+  </div>
+
+</div>
+
+</body>
+</html>
