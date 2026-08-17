@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>图商数智赋能数据概览大屏 (16:9)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --bg-primary: #0a0e27;
+    --bg-secondary: #111638;
+    --bg-card: #161b40e0;
+    --border-color: rgba(99, 132, 255, 0.15);
+    --accent-blue: #4f7cff;
+    --accent-cyan: #00d4ff;
+    --accent-green: #00e396;
+    --accent-orange: #ff6b35;
+    --accent-purple: #9b6dff;
+    --accent-pink: #ff4da6;
+    --accent-yellow: #ffc107;
+    --text-primary: #e8ecf4;
+    --text-secondary: #8b95b5;
+    --text-muted: #5a6488;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1920px; height: 1080px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg-primary); color: var(--text-primary); position: relative;
+  }
+
+  /* ====== Background ====== */
+  .bg-pattern {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse 700px 600px at 20% 20%, rgba(79,124,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 600px 700px at 80% 80%, rgba(0,212,255,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 500px 500px at 50% 50%, rgba(155,109,255,0.04) 0%, transparent 60%);
+  }
+  .bg-grid {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(79,124,255,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(79,124,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px; animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove { 0% { transform: translate(0,0); } 100% { transform: translate(60px,60px); } }
+
+  .scan-line {
+    position: absolute; left: 0; width: 100%; height: 2px;
+    z-index: 1; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.1), rgba(0,212,255,0.3), rgba(0,212,255,0.1), transparent);
+    box-shadow: 0 0 20px rgba(0,212,255,0.1);
+    animation: scanMove 4s ease-in-out infinite;
+  }
+  @keyframes scanMove { 0% { top:0; opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { top:100%; opacity:0; } }
+
+  .deco-ring {
+    position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+    border: 1px solid rgba(0,212,255,0.05);
+    animation: spinRing 20s linear infinite;
+  }
+  .deco-ring::before {
+    content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    width: 12px; height: 2px; background: var(--accent-cyan);
+    box-shadow: 0 0 10px var(--accent-cyan); border-radius: 1px;
+  }
+  @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .deco-ring2 { animation: spinRing 15s linear infinite reverse; }
+
+  .particle { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; animation: floatUp linear infinite; }
+  @keyframes floatUp {
+    0% { transform: translateY(1080px) scale(0); opacity: 0; }
+    10% { opacity: 0.4; } 85% { opacity: 0.4; }
+    100% { transform: translateY(-20px) scale(1); opacity: 0; }
+  }
+
+  /* ====== Header ====== */
+  .header {
+    position: absolute; top: 0; left: 0; width: 1920px; height: 66px;
+    z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column;
+    background: linear-gradient(180deg, rgba(10,14,39,0.98) 0%, rgba(10,14,39,0.85) 100%);
+    border-bottom: 1px solid var(--border-color);
+  }
+  .header::after {
+    content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 360px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-blue), var(--accent-cyan), var(--accent-purple), transparent);
+    animation: headerGlow 3s ease-in-out infinite;
+  }
+  @keyframes headerGlow { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  .header h1 {
+    font-size: 23px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; letter-spacing: 4px; line-height: 1.2;
+  }
+  .header .subtitle { color: var(--text-secondary); font-size: 11px; letter-spacing: 5px; margin-top: 1px; }
+
+  /* ====== Text Light Sweep ====== */
+  .text-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .text-sweep::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.15), transparent);
+    animation: textSweep 4s ease-in-out infinite;
+  }
+  @keyframes textSweep {
+    0% { left: -100%; }
+    50% { left: 200%; }
+    100% { left: 200%; }
+  }
+
+  /* ====== Card ====== */
+  .card {
+    position: absolute; backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, rgba(22,27,64,0.92), rgba(22,27,64,0.75));
+    border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px;
+    z-index: 5; overflow: hidden; transition: all 0.3s ease;
+  }
+  .card::before {
+    content: ''; position: absolute; top: -2px; left: -100%; width: 200%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-blue), var(--accent-cyan), transparent);
+    opacity: 0.6;
+    animation: borderFlow 4s linear infinite;
+  }
+  @keyframes borderFlow {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(50%); }
+  }
+
+  .card::after {
+    content: ''; position: absolute; top: -100%; right: -2px; width: 2px; height: 200%;
+    background: linear-gradient(180deg, transparent, var(--accent-cyan), var(--accent-blue), transparent);
+    opacity: 0.4;
+    animation: borderFlowRight 4s linear infinite 1s;
+    pointer-events: none;
+  }
+  @keyframes borderFlowRight {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(50%); }
+  }
+
+  .card .border-flow-b {
+    position: absolute; bottom: -2px; right: -100%; width: 200%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-purple), var(--accent-cyan), transparent);
+    opacity: 0.4;
+    animation: borderFlowB 4s linear infinite 2s;
+    pointer-events: none;
+  }
+  @keyframes borderFlowB {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .card .border-flow-l {
+    position: absolute; bottom: -100%; left: -2px; width: 2px; height: 200%;
+    background: linear-gradient(0deg, transparent, var(--accent-blue), var(--accent-purple), transparent);
+    opacity: 0.4;
+    animation: borderFlowL 4s linear infinite 3s;
+    pointer-events: none;
+  }
+  @keyframes borderFlowL {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+
+  .card:hover {
+    border-color: rgba(79,124,255,0.3);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 30px rgba(79,124,255,0.05);
+  }
+
+  .card-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 7px;
+    color: var(--text-primary); letter-spacing: 0.5px; position: relative; z-index: 2;
+  }
+  .card-title .icon {
+    width: 23px; height: 23px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .card-body { width: 100%; height: calc(100% - 30px); position: relative; z-index: 1; }
+
+  .corner-deco {
+    position: absolute; width: 14px; height: 14px;
+    border-color: var(--accent-cyan); opacity: 0.25; z-index: 3;
+  }
+  .corner-deco.tl { top: 3px; left: 3px; border-top: 1px solid; border-left: 1px solid; }
+  .corner-deco.tr { top: 3px; right: 3px; border-top: 1px solid; border-right: 1px solid; }
+  .corner-deco.bl { bottom: 3px; left: 3px; border-bottom: 1px solid; border-left: 1px solid; }
+  .corner-deco.br { bottom: 3px; right: 3px; border-bottom: 1px solid; border-right: 1px solid; }
+
+  .live-dot {
+    display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent-green); margin-right: 5px;
+    animation: pulse 2s ease-in-out infinite; vertical-align: middle;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.5); } }
+
+  /* ====== KPI Cards（地图框内顶部，flex布局） ====== */
+  .kpi-row {
+    display: flex; gap: 10px; margin: 2px 0 8px; position: relative; z-index: 8;
+  }
+  .kpi-card {
+    flex: 1; min-width: 0;
+    padding: 9px 4px 7px;
+    background: linear-gradient(135deg, rgba(22,27,64,0.88), rgba(22,27,64,0.7));
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(99,132,255,0.12);
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+  }
+  .kpi-card .kpi-color-bar {
+    position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+    animation: kpiBarPulse 3s ease-in-out infinite;
+  }
+  @keyframes kpiBarPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .kpi-card:hover {
+    border-color: rgba(79,124,255,0.4);
+    box-shadow: 0 0 24px rgba(79,124,255,0.2);
+    transform: translateY(-2px);
+  }
+  .kpi-card .kpi-label {
+    font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; letter-spacing: 0.5px; position: relative; z-index: 1;
+  }
+  .kpi-card .kpi-sub {
+    font-size: 9px; color: var(--text-muted); margin-top: 2px; position: relative; z-index: 1;
+  }
+  .kpi-card .kpi-bar {
+    height: 2px; width: 40px; margin: 3px auto 0; border-radius: 1px; position: relative; z-index: 1;
+  }
+
+  /* ====== 3D Flip Digit ====== */
+  .kpi-digit-wrap {
+    display: inline-flex; gap: 2px; justify-content: center; align-items: center;
+    margin-bottom: 1px; position: relative; z-index: 1;
+  }
+  .kpi-digit {
+    display: inline-block; width: 30px; height: 40px; line-height: 40px;
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(135deg, rgba(79,124,255,0.12), rgba(0,212,255,0.06));
+    border: 1px solid rgba(99,132,255,0.12);
+    border-radius: 5px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    perspective: 300px;
+    transform-style: preserve-3d;
+    animation: flipDigit 0.8s cubic-bezier(0.6, 0.04, 0.98, 0.34) forwards;
+    opacity: 0;
+  }
+  .kpi-digit::after {
+    content: '';
+    position: absolute; left: 0; top: 50%; width: 100%; height: 1px;
+    background: rgba(99,132,255,0.1);
+  }
+  @keyframes flipDigit {
+    0% { transform: rotateX(-90deg); opacity: 0; }
+    50% { transform: rotateX(20deg); opacity: 1; }
+    75% { transform: rotateX(-5deg); }
+    100% { transform: rotateX(0deg); opacity: 1; }
+  }
+
+  /* ====== Mini Table ====== */
+  .mini-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+  .mini-table th { color: var(--accent-cyan); padding: 3px 6px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border-color); background: rgba(79,124,255,0.05); }
+  .mini-table td { padding: 3px 6px; border-bottom: 1px solid rgba(99,132,255,0.06); color: var(--text-secondary); }
+  .mini-table .num { color: var(--accent-cyan); font-weight: 600; }
+
+  .tag { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 500; }
+  .tag-blue { background: rgba(79,124,255,0.15); color: var(--accent-blue); }
+  .tag-green { background: rgba(0,227,150,0.15); color: var(--accent-green); }
+  .tag-cyan { background: rgba(0,212,255,0.15); color: var(--accent-cyan); }
+  .tag-orange { background: rgba(255,107,53,0.15); color: var(--accent-orange); }
+  .tag-purple { background: rgba(155,109,255,0.15); color: var(--accent-purple); }
+</style>
+</head>
+<body>
+
+<div class="bg-pattern"></div>
+<div class="bg-grid"></div>
+<div class="scan-line"></div>
+
+<!-- Decorative Rings -->
+<div class="deco-ring" style="left:120px; top:470px; width:110px; height:110px;"></div>
+<div class="deco-ring2" style="right:120px; top:470px; width:70px; height:70px;"></div>
+<div class="deco-ring" style="left:50%; top:260px; width:160px; height:160px; opacity:0.3;"></div>
+<div class="deco-ring2" style="left:50%; top:380px; width:220px; height:220px; opacity:0.2;"></div>
+
+<div id="particles"></div>
+
+<!-- Header -->
+<div class="header">
+  <h1>图商数智赋能数据概览大屏</h1>
+  <div class="subtitle">CHAIN MERCHANT DATA OVERVIEW &amp; MARKET ANALYSIS</div>
+</div>
+
+<!-- ====== Left Column ====== -->
+<!-- Card 1.3: 商户地理分类 -->
+<div class="card" style="left:12px; top:74px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(0,212,255,0.15); color:var(--accent-cyan);">🗺️</span>1.3 商户地理分类</div>
+  <div class="card-body" id="chart-geo" style="height:calc(100% - 28px);"></div>
+</div>
+
+<!-- Card 2.1: 运营商市场份额 -->
+<div class="card" style="left:12px; top:307px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(79,124,255,0.15); color:var(--accent-blue);">🏆</span>2.1 运营商市场份额</div>
+  <div class="card-body" id="chart-isp" style="height:calc(100% - 28px);"></div>
+</div>
+
+<!-- 近一月商机数量趋势 -->
+<div class="card" style="left:12px; top:540px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(255,107,53,0.15); color:var(--accent-orange);">📈</span>近一月商机数量趋势<span style="margin-left:auto; font-size:10px; color:var(--text-muted);"><span class="live-dot"></span>实时</span></div>
+  <div class="card-body" id="chart-opportunity" style="height:calc(100% - 28px);"></div>
+</div>
+
+<!-- ====== Center: China Map (KPI 卡片在框内顶部) ====== -->
+<div class="card" style="left:484px; top:74px; width:952px; height:691px; padding:8px 12px; display:flex; flex-direction:column;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="corner-deco bl"></div><div class="corner-deco br"></div>
+
+  <div class="card-title text-sweep" style="margin-bottom:4px; justify-content:center;">
+    <span class="icon" style="background:rgba(0,212,255,0.15); color:var(--accent-cyan); font-size:15px;">🌏</span>全国商户数据分布
+  </div>
+
+  <!-- KPI 卡片行（框内顶部） -->
+  <div class="kpi-row">
+    <div class="kpi-card" id="kpi-total-card" style="border-left:2px solid var(--accent-cyan);">
+      <div class="kpi-color-bar" style="background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));"></div>
+      <div class="kpi-label text-sweep">商户总量（万）</div>
+      <div class="kpi-digit-wrap" id="kpi-total-digits"></div>
+      <div class="kpi-sub">基数规模</div>
+      <div class="kpi-bar" style="background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));"></div>
+    </div>
+    <div class="kpi-card" id="kpi-active-card" style="border-left:2px solid var(--accent-green);">
+      <div class="kpi-color-bar" style="background:linear-gradient(90deg,var(--accent-green),var(--accent-cyan));"></div>
+      <div class="kpi-label text-sweep">正常营业状态（万）</div>
+      <div class="kpi-digit-wrap" id="kpi-active-digits"></div>
+      <div class="kpi-sub">占比 81.79%</div>
+      <div class="kpi-bar" style="background:linear-gradient(90deg,var(--accent-green),var(--accent-cyan));"></div>
+    </div>
+    <div class="kpi-card" id="kpi-net-card" style="border-left:2px solid var(--accent-purple);">
+      <div class="kpi-color-bar" style="background:linear-gradient(90deg,var(--accent-purple),var(--accent-pink));"></div>
+      <div class="kpi-label text-sweep">能识别宽带（万）</div>
+      <div class="kpi-digit-wrap" id="kpi-net-digits"></div>
+      <div class="kpi-sub">占比 51.41%</div>
+      <div class="kpi-bar" style="background:linear-gradient(90deg,var(--accent-purple),var(--accent-pink));"></div>
+    </div>
+    <div class="kpi-card" id="kpi-phone-card" style="border-left:2px solid var(--accent-orange);">
+      <div class="kpi-color-bar" style="background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));"></div>
+      <div class="kpi-label text-sweep">有联系电话（万）</div>
+      <div class="kpi-digit-wrap" id="kpi-phone-digits"></div>
+      <div class="kpi-sub">占比 49.67%</div>
+      <div class="kpi-bar" style="background:linear-gradient(90deg,var(--accent-orange),var(--accent-yellow));"></div>
+    </div>
+  </div>
+
+  <div id="chart-map" style="width:100%; flex:1; min-height:0;"></div>
+</div>
+
+<!-- ====== Right Column ====== -->
+<!-- Card 2.3: 行业商户分布 -->
+<div class="card" style="right:12px; top:74px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(79,124,255,0.15); color:var(--accent-blue);">🏭</span>2.3 行业商户分布</div>
+  <div class="card-body" id="chart-industry" style="height:calc(100% - 28px);"></div>
+</div>
+
+<!-- Card 2.4: 场景类型分布 -->
+<div class="card" style="right:12px; top:307px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(155,109,255,0.15); color:var(--accent-purple);">🏢</span>2.4 场景类型分布</div>
+  <div class="card-body" id="chart-scene" style="height:calc(100% - 28px);"></div>
+</div>
+
+<!-- Card 3.1: 连锁类型 -->
+<div class="card" style="right:12px; top:540px; width:460px; height:225px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(0,227,150,0.15); color:var(--accent-green);">🔗</span>3.1 连锁类型</div>
+  <div class="card-body" style="overflow:hidden;">
+    <div style="display:flex; gap:6px; height:40%;">
+      <div style="flex:1; background:rgba(79,124,255,0.06); border-radius:5px; padding:6px 4px; text-align:center;">
+        <div style="font-size:19px; font-weight:800; color:var(--accent-cyan);">923</div>
+        <div style="font-size:9px; color:var(--text-secondary);">连锁商户(万户)</div>
+      </div>
+      <div style="flex:1; background:rgba(79,124,255,0.06); border-radius:5px; padding:6px 4px; text-align:center;">
+        <div style="font-size:19px; font-weight:800; color:var(--accent-purple);">27.9</div>
+        <div style="font-size:9px; color:var(--text-secondary);">连锁品牌(万个)</div>
+      </div>
+      <div style="flex:1; background:rgba(79,124,255,0.06); border-radius:5px; padding:6px 4px; text-align:center;">
+        <div style="font-size:19px; font-weight:800; color:var(--accent-green);">93.50%</div>
+        <div style="font-size:9px; color:var(--text-secondary);">跨省连锁占比</div>
+      </div>
+    </div>
+    <div style="height:60%; padding-top:6px;">
+      <table class="mini-table">
+        <thead><tr><th>类型</th><th>品牌(万)</th><th>商户(万)</th><th>户均</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-blue">跨省</span></td><td class="num">16</td><td class="num">863</td><td class="num">54</td></tr>
+          <tr><td><span class="tag tag-cyan">跨市</span></td><td class="num">2</td><td class="num">26</td><td class="num">11</td></tr>
+          <tr><td><span class="tag tag-green">本地</span></td><td class="num">9</td><td class="num">33</td><td class="num">4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Bottom Row ====== -->
+<div class="card" style="left:12px; top:773px; width:625px; height:210px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(255,107,53,0.15); color:var(--accent-orange);">🏅</span>3.2 连锁品牌TOP20排行</div>
+  <div class="card-body" id="chart-brand-top20" style="height:calc(100% - 28px);"></div>
+</div>
+
+<div class="card" style="left:647px; top:773px; width:625px; height:210px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(79,124,255,0.15); color:var(--accent-blue);">🏢</span>3.4 连锁场景分类</div>
+  <div class="card-body" id="chart-chain-scene" style="height:calc(100% - 28px);"></div>
+</div>
+
+<div class="card" style="left:1282px; top:773px; width:626px; height:210px;">
+  <div class="border-flow-b"></div><div class="border-flow-l"></div>
+  <div class="corner-deco tl"></div><div class="corner-deco tr"></div>
+  <div class="card-title text-sweep"><span class="icon" style="background:rgba(0,227,150,0.15); color:var(--accent-green);">⏳</span>4.2 商户存活时间分布</div>
+  <div class="card-body" id="chart-lifecycle" style="height:calc(100% - 28px);"></div>
+</div>
+
+<script>
+// ===== Helpers =====
+const darkTheme = { backgroundColor: 'transparent', textStyle: { color: '#8b95b5' }, title: { textStyle: { color: '#e8ecf4', fontSize: 13 } } };
+const chartInstances = {};
+
+function createChart(domId, option) {
+  const dom = document.getElementById(domId);
+  if (!dom) return null;
+  const chart = echarts.init(dom, null, { renderer: 'canvas' });
+  chart.setOption(option);
+  chartInstances[domId] = chart;
+  return chart;
+}
+
+function barGradientV(c1, c2) {
+  return new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset:0,color:c1},{offset:1,color:c2}]);
+}
+
+// ===== 3D Flip Digit + Dynamic Growth =====
+function renderFlipDigits(wrapId, target, color) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const str = String(target);
+  const len = str.length;
+
+  wrap.innerHTML = '';
+  for (let i = 0; i < len; i++) {
+    const d = document.createElement('span');
+    d.className = 'kpi-digit';
+    d.style.color = color;
+    d.style.animationDelay = (i * 0.1) + 's';
+    d.textContent = '0';
+    wrap.appendChild(d);
+  }
+
+  const digits = wrap.querySelectorAll('.kpi-digit');
+  let current = 0;
+  const step = Math.max(1, Math.floor(target / 60));
+  const timer = setInterval(function() {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    const strCur = String(current).padStart(len, '0');
+    for (let i = 0; i < len; i++) {
+      digits[i].textContent = strCur[i];
+    }
+  }, 30);
+}
+
+// ===== Particles =====
+function createParticles() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  for (let i = 0; i < 45; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 20) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    p.style.width = (1 + Math.random() * 4) + 'px';
+    p.style.height = p.style.width;
+    const colors = ['rgba(79,124,255,0.5)', 'rgba(0,212,255,0.5)', 'rgba(155,109,255,0.5)', 'rgba(0,227,150,0.4)'];
+    p.style.background = colors[Math.floor(Math.random() * 4)];
+    container.appendChild(p);
+  }
+}
+
+// ===== Light Rays =====
+function createLightRays() {
+  var style = document.createElement('style');
+  style.textContent = '.light-ray{position:absolute;width:1px;height:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(79,124,255,0.08),transparent);animation:lightRay 6s ease-in-out infinite}@keyframes lightRay{0%{height:0;opacity:0}30%{height:260px;opacity:1}70%{height:260px;opacity:1}100%{height:0;opacity:0}}';
+  document.head.appendChild(style);
+  for (var i = 0; i < 11; i++) {
+    var ray = document.createElement('div');
+    ray.className = 'light-ray';
+    ray.style.left = (80 + Math.random() * 1700) + 'px';
+    ray.style.top = (70 + Math.random() * 180) + 'px';
+    ray.style.animationDelay = (Math.random() * 5) + 's';
+    ray.style.width = (1 + Math.random() * 2) + 'px';
+    document.body.appendChild(ray);
+  }
+}
+
+// ===== Pie Chart Animation Helper (无图例) =====
+function pieOption(opt) {
+  var isPercent = opt.percent === true;
+  var tooltipFormatter = opt.formatter || function(p) {
+    if (isPercent) {
+      return p.name + ': <b>' + p.percent + '%</b>';
+    }
+    return p.name + ': <b>' + p.value + ' 万</b> (' + p.percent + '%)';
+  };
+  return {
+    ...darkTheme,
+    tooltip: { trigger: 'item', formatter: tooltipFormatter },
+    series: [{
+      type: 'pie', radius: opt.radius || ['30%','68%'], center: ['50%','50%'],
+      itemStyle: { borderRadius: 5, borderColor: 'rgba(22,27,64,0.5)', borderWidth: 2 },
+      label: { show: true, color: '#8b95b5', fontSize: opt.labelFontSize || 14, formatter: opt.labelFormatter || '{b}\n{d}%' },
+      emphasis: { itemStyle: { shadowBlur: 15, shadowColor: 'rgba(79,124,255,0.3)' } },
+      animationType: 'scale',
+      animationDuration: opt.duration || 1200,
+      animationEasing: 'elasticOut',
+      animationDelay: function(idx) { return idx * 150; },
+      data: opt.data
+    }]
+  };
+}
+
+// ===== Init Charts =====
+function initCharts() {
+  // 1.3 商户地理分类
+  createChart('chart-geo', pieOption({
+    radius: ['34%','70%'], center: ['50%','50%'],
+    labelFontSize: 14, duration: 1400, percent: true,
+    data: [
+      { value: 80.46, name: '沿街商户', itemStyle: { color: barGradientV('#4f7cff','#00d4ff') } },
+      { value: 19.54, name: '非沿街商户', itemStyle: { color: barGradientV('#9b6dff','#ff4da6') } },
+    ]
+  }));
+
+  // 2.1 运营商市场份额
+  createChart('chart-isp', pieOption({
+    duration: 1500, labelFontSize: 14,
+    data: [
+      { value: 966.69, name: '中国电信', itemStyle: { color: '#4f7cff' } },
+      { value: 875.02, name: '中国移动', itemStyle: { color: '#00e396' } },
+      { value: 501.16, name: '中国联通', itemStyle: { color: '#ff6b35' } },
+    ]
+  }));
+
+  // 近一月商机数量趋势
+  createChart('chart-opportunity', {
+    ...darkTheme,
+    tooltip: { trigger: 'axis', formatter: function(params) { return params[0].name + '<br/>商机数量: <b>' + params[0].value + '</b>'; } },
+    grid: { left: 42, right: 15, top: 15, bottom: 22 },
+    xAxis: {
+      type: 'category',
+      data: ['7月12日','7月15日','7月18日','7月21日','7月24日','7月27日','7月30日','8月02日','8月05日','8月08日'],
+      axisLine: { lineStyle: { color: '#2a305a' } },
+      axisLabel: { color: '#8b95b5', fontSize: 8, rotate: 25 },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value', name: '数量', nameTextStyle: { color: '#8b95b5', fontSize: 9 },
+      axisLine: { show: false }, splitLine: { lineStyle: { color: '#1c2250', type: 'dashed' } },
+      axisLabel: { color: '#8b95b5', fontSize: 8 }
+    },
+    series: [{
+      type: 'line', smooth: true,
+      data: [30791, 63773, 43738, 52003, 24458, 37045, 49461, 22643, 40174, 19827],
+      lineStyle: { color: '#00d4ff', width: 2.5, shadowBlur: 8, shadowColor: 'rgba(0,212,255,0.3)' },
+      itemStyle: { color: '#00d4ff' },
+      symbol: 'circle', symbolSize: 5,
+      label: { show: true, color: '#8b95b5', fontSize: 10, formatter: function(p) { return p.value; } },
+      areaStyle: { color: barGradientV('rgba(0,212,255,0.25)', 'rgba(0,212,255,0.02)') },
+      animationDuration: 2000,
+      animationEasing: 'cubicOut',
+    }]
+  });
+
+  // 2.3 行业商户分布
+  createChart('chart-industry', pieOption({
+    duration: 1600,
+    labelFontSize: 12,
+    data: [
+      { value: 1878.87, name: '购物', itemStyle: { color: '#4f7cff' } },
+      { value: 921.22, name: '美食', itemStyle: { color: '#ff6b35' } },
+      { value: 448.92, name: '生活服务', itemStyle: { color: '#00e396' } },
+      { value: 321.84, name: '公司企业', itemStyle: { color: '#9b6dff' } },
+      { value: 234.24, name: '丽人', itemStyle: { color: '#ff4da6' } },
+      { value: 229.09, name: '休闲娱乐', itemStyle: { color: '#00d4ff' } },
+      { value: 205.55, name: '汽车服务', itemStyle: { color: '#ffc107' } },
+      { value: 150.62, name: '医疗', itemStyle: { color: '#e74c3c' } },
+      { value: 111.62, name: '酒店', itemStyle: { color: '#1abc9c' } },
+      { value: 81.35, name: '教育培训', itemStyle: { color: '#8e44ad' } },
+      { value: 41.98, name: '运动健身', itemStyle: { color: '#27ae60' } },
+      { value: 9.66, name: '金融', itemStyle: { color: '#f39c12' } },
+      { value: 5.35, name: '房地产', itemStyle: { color: '#34495e' } },
+    ]
+  }));
+
+  // 2.4 场景类型分布
+  createChart('chart-scene', pieOption({
+    duration: 1600,
+    labelFontSize: 12, percent: true,
+    data: [
+      { value: 39.77, name: '其他', itemStyle: { color: '#9b6dff' } },
+      { value: 29.10, name: '社区底商', itemStyle: { color: '#00e396' } },
+      { value: 23.75, name: '沿街商户', itemStyle: { color: '#4f7cff' } },
+      { value: 4.44, name: '商业综合体', itemStyle: { color: '#ff6b35' } },
+      { value: 2.46, name: '聚类市场', itemStyle: { color: '#00d4ff' } },
+      { value: 0.47, name: '商业街', itemStyle: { color: '#ffc107' } },
+      { value: 0.01, name: '夜市', itemStyle: { color: '#e74c3c' } },
+    ]
+  }));
+
+  // 3.2 连锁品牌TOP20
+  createChart('chart-brand-top20', {
+    ...darkTheme,
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: function(p) { return p[0].name + '<br/>商户数: <b>' + p[0].value + ' 万</b>'; } },
+    grid: { left: 90, right: 55, top: 5, bottom: 18 },
+    xAxis: { type: 'value', name: '万', nameTextStyle: { color: '#8b95b5', fontSize: 9 }, axisLine: { show: false }, splitLine: { lineStyle: { color: '#1c2250' } }, axisLabel: { color: '#8b95b5', fontSize: 8 } },
+    yAxis: { type: 'category', data: ['联塑管道','海尔','哈啰租车','韵达快递','兔喜生活','天能电池','luckincoffee瑞幸咖啡','雨虹防水','台铃电动车','爱玛电动车','晨光文具','美宜佳','日丰管','蜜雪冰城','美的','雅迪电动车','顺丰速运','菜鸟驿站','中国福利彩票','中国体育彩票'].reverse(), axisLine: { lineStyle: { color: '#2a305a' } }, axisLabel: { color: '#8b95b5', fontSize: 8 } },
+    series: [{
+      type: 'bar', barWidth: '60%',
+      data: [2.40, 2.63, 2.66, 2.76, 3.00, 3.17, 3.18, 3.18, 3.39, 3.44, 3.56, 3.78, 4.02, 4.34, 4.40, 4.63, 5.23, 10.70, 13.05, 15.57].reverse(),
+      itemStyle: { borderRadius: [0,4,4,0], color: function(p) { var idx = 19 - p.dataIndex; return idx < 3 ? '#ffc107' : idx < 7 ? '#ff6b35' : '#4f7cff'; } },
+      label: { show: true, position: 'right', formatter: '{c}万', color: '#8b95b5', fontSize: 10 },
+      animationDuration: 1000,
+      animationDelay: function(idx) { return idx * 50; },
+      animationEasing: 'cubicOut',
+    }]
+  });
+
+  // 3.4 连锁场景分类
+  createChart('chart-chain-scene', {
+    ...darkTheme,
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: function(params) {
+      var html = '<b>' + params[0].name + '</b><br/>';
+      params.forEach(function(p) { var u = p.seriesName === '商户总量' ? '万家' : '%'; html += p.marker + ' ' + p.seriesName + ': <b>' + p.value + u + '</b><br/>'; });
+      return html;
+    }},
+    legend: { data: ['商户总量', '可识别宽带占比', '联通宽带份额'], textStyle: { color: '#8b95b5', fontSize: 9 }, top: 0, itemWidth: 12, itemHeight: 8 },
+    grid: { left: 60, right: 40, top: 28, bottom: 18 },
+    xAxis: { type: 'category', data: ['夜市','商业街','商业综合体','聚类市场','其他','社区底商','沿街商户'], axisLine: { lineStyle: { color: '#2a305a' } }, axisLabel: { color: '#8b95b5', fontSize: 8 } },
+    yAxis: [
+      { type: 'value', name: '万', nameTextStyle: { color: '#8b95b5', fontSize: 8 }, axisLine: { show: false }, splitLine: { lineStyle: { color: '#1c2250' } }, axisLabel: { color: '#8b95b5', fontSize: 8 } },
+      { type: 'value', name: '%', nameTextStyle: { color: '#8b95b5', fontSize: 8 }, axisLine: { show: false }, splitLine: { show: false }, axisLabel: { color: '#8b95b5', fontSize: 8, formatter: '{value}%' } },
+    ],
+    series: [
+      { name: '商户总量', type: 'bar', barWidth: '30%', yAxisIndex: 0, data: [0.54,21.84,205.81,114.11,1845.41,1350.50,1102.11], itemStyle: { color: barGradientV('#4f7cff','#1a3a6e'), borderRadius: [3,3,0,0] }, label: { show: true, position: 'top', formatter: '{c}', color: '#4f7cff', fontSize: 10 }, animationDuration: 1000, animationDelay: function(idx) { return idx * 100; } },
+      { name: '可识别宽带占比', type: 'line', yAxisIndex: 1, data: [56.13,64.35,68.44,53.11,49.66,57.20,43.63], lineStyle: { color: '#00e396', width: 2, shadowBlur: 6, shadowColor: 'rgba(0,227,150,0.3)' }, itemStyle: { color: '#00e396' }, symbol: 'circle', symbolSize: 5, label: { show: true, formatter: '{c}%', color: '#00e396', fontSize: 10 }, animationDuration: 1500 },
+      { name: '联通宽带份额', type: 'line', yAxisIndex: 1, data: [11.30,18.58,24.62,20.43,22.14,21.76,20.85], lineStyle: { color: '#ff6b35', width: 1.5, type: 'dashed' }, itemStyle: { color: '#ff6b35' }, symbol: 'diamond', symbolSize: 5, label: { show: true, formatter: '{c}%', color: '#ff6b35', fontSize: 10 }, animationDuration: 1500 },
+    ]
+  });
+
+  // 4.2 商户存活时间分布
+  createChart('chart-lifecycle', pieOption({
+    radius: ['32%','66%'], duration: 1400, labelFontSize: 14,
+    data: [
+      { value: 1419.57, name: '5年以上', itemStyle: { color: '#00e396' } },
+      { value: 1147.35, name: '1年以内', itemStyle: { color: '#ff6b35' } },
+      { value: 696.75, name: '3-5年', itemStyle: { color: '#00d4ff' } },
+      { value: 1376.64, name: '1-3年', itemStyle: { color: '#4f7cff' } },
+    ]
+  }));
+}
+
+// ===== China Map =====
+function initMap() {
+  const dom = document.getElementById('chart-map');
+  if (!dom) return;
+  const chart = echarts.init(dom, null, { renderer: 'canvas' });
+  chartInstances['chart-map'] = chart;
+
+  const provinceData = [
+    { name: '广东省', value: 544.52 }, { name: '山东省', value: 355.91 },
+    { name: '江苏省', value: 318.99 }, { name: '河南省', value: 312.33 },
+    { name: '浙江省', value: 273.02 }, { name: '四川省', value: 254.03 },
+    { name: '河北省', value: 236.50 }, { name: '安徽省', value: 188.61 },
+    { name: '湖南省', value: 186.16 }, { name: '湖北省', value: 173.91 },
+    { name: '福建省', value: 157.36 }, { name: '广西壮族自治区', value: 145.23 },
+    { name: '辽宁省', value: 141.22 }, { name: '云南省', value: 139.56 },
+    { name: '江西省', value: 131.60 }, { name: '陕西省', value: 121.82 },
+    { name: '贵州省', value: 120.32 }, { name: '山西省', value: 102.34 },
+    { name: '黑龙江省', value: 89.71 }, { name: '重庆市', value: 89.58 },
+    { name: '内蒙古自治区', value: 89.33 }, { name: '吉林省', value: 77.78 },
+    { name: '上海市', value: 70.98 }, { name: '甘肃省', value: 68.91 },
+    { name: '新疆维吾尔自治区', value: 63.52 }, { name: '北京市', value: 58.92 },
+    { name: '天津市', value: 43.37 }, { name: '海南省', value: 30.95 },
+    { name: '宁夏回族自治区', value: 26.80 }, { name: '青海省', value: 15.85 },
+    { name: '西藏自治区', value: 11.19 },
+  ];
+
+  fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+    .then(function(res) { return res.json(); })
+    .then(function(chinaJson) {
+      echarts.registerMap('china', chinaJson);
+      chart.setOption({
+        ...darkTheme,
+        tooltip: { trigger: 'item', formatter: function(p) { return p.name + '<br/>商户总量: <b>' + (p.data ? p.data.value : '暂无') + ' 万</b>'; } },
+        visualMap: {
+          min: 0, max: 550, left: 15, bottom: 10,
+          text: ['高', '低'], textStyle: { color: '#8b95b5', fontSize: 9 },
+          inRange: { color: ['#0a1a4a','#1a3a7a','#2a5aaa','#3a7ada','#4f9aff','#6ab5ff'] },
+          calculable: true, itemWidth: 10, itemHeight: 50,
+        },
+        series: [{
+          type: 'map', map: 'china', roam: false, selectedMode: false,
+          zoom: 1.375,
+          center: [104, 36],
+          label: { show: true, color: '#e8ecf4', fontSize: 9, fontWeight: 500 },
+          emphasis: { label: { color: '#fff', fontSize: 12, fontWeight: 'bold' }, itemStyle: { areaColor: '#3a7ada', shadowBlur: 25, shadowColor: 'rgba(79,124,255,0.5)' } },
+          itemStyle: { borderColor: 'rgba(79,124,255,0.25)', borderWidth: 1, areaColor: '#0d1a4a' },
+          data: provinceData,
+          animationDuration: 1500, animationEasing: 'cubicOut',
+        }]
+      });
+    })
+    .catch(function(err) {
+      chart.setOption({ title: { text: '地图数据加载中...', left: 'center', top: 'center', textStyle: { color: '#8b95b5', fontSize: 16 } } });
+    });
+}
+
+// ===== Sequential Data Refresh Loop =====
+function startDataRefreshLoop() {
+  const refreshOrder = [
+    { id: 'chart-geo', type: 'pie' },
+    { id: 'chart-isp', type: 'pie' },
+    { id: 'chart-opportunity', type: 'line' },
+    { id: 'chart-industry', type: 'pie' },
+    { id: 'chart-scene', type: 'pie' },
+    { id: 'chart-brand-top20', type: 'bar' },
+    { id: 'chart-chain-scene', type: 'mixed' },
+    { id: 'chart-lifecycle', type: 'pie' },
+  ];
+
+  function tick() {
+    refreshNextChart();
+    setTimeout(tick, 4000);
+  }
+
+  var chartIndex = 0;
+
+  function refreshNextChart() {
+    var item = refreshOrder[chartIndex];
+    var chart = chartInstances[item.id];
+    if (chart) {
+      var newData;
+      switch (item.type) {
+        case 'pie':
+          newData = [];
+          var oldData = chart.getOption().series[0].data;
+          if (oldData && oldData.length) {
+            for (var i = 0; i < oldData.length; i++) {
+              var v = oldData[i].value || oldData[i];
+              var perturb = Math.round(v * (0.92 + Math.random() * 0.16));
+              newData.push({
+                value: perturb,
+                name: oldData[i].name || '',
+                itemStyle: oldData[i].itemStyle || undefined
+              });
+            }
+          }
+          chart.setOption({ series: [{ data: newData, animationDuration: 800, animationEasing: 'elasticOut' }] });
+          break;
+
+        case 'line':
+          var base = [30791, 63773, 43738, 52003, 24458, 37045, 49461, 22643, 40174, 19827];
+          newData = base.map(function(v) { return v + Math.round(Math.random() * 100 - 50); });
+          chart.setOption({ series: [{ data: newData, animationDuration: 1000, animationEasing: 'cubicOut' }] });
+          break;
+
+        case 'bar':
+          var baseB = [2.40, 2.63, 2.66, 2.76, 3.00, 3.17, 3.18, 3.18, 3.39, 3.44, 3.56, 3.78, 4.02, 4.34, 4.40, 4.63, 5.23, 10.70, 13.05, 15.57];
+          newData = baseB.map(function(v) { return Math.round((v + (Math.random() - 0.5) * 0.3) * 100) / 100; });
+          chart.setOption({ series: [{ data: newData.reverse(), animationDuration: 800, animationDelay: function(idx) { return idx * 30; } }] });
+          break;
+
+        case 'mixed':
+          var barBase = [0.54, 21.84, 205.81, 114.11, 1845.41, 1350.50, 1102.11];
+          var lineBase1 = [56.13, 64.35, 68.44, 53.11, 49.66, 57.20, 43.63];
+          var lineBase2 = [11.30, 18.58, 24.62, 20.43, 22.14, 21.76, 20.85];
+          chart.setOption({
+            series: [
+              { data: barBase.map(function(v) { return Math.round((v + (Math.random() - 0.5) * 3) * 100) / 100; }), animationDuration: 800 },
+              { data: lineBase1.map(function(v) { return Math.round((v + (Math.random() - 0.5) * 2) * 100) / 100; }), animationDuration: 800 },
+              { data: lineBase2.map(function(v) { return Math.round((v + (Math.random() - 0.5) * 1) * 100) / 100; }), animationDuration: 800 },
+            ]
+          });
+          break;
+      }
+    }
+    chartIndex = (chartIndex + 1) % refreshOrder.length;
+  }
+
+  setTimeout(tick, 6000);
+}
+
+// ===== DOM Ready =====
+document.addEventListener('DOMContentLoaded', function() {
+  createParticles();
+  createLightRays();
+
+  renderFlipDigits('kpi-total-digits', 4640, '#00d4ff');
+  renderFlipDigits('kpi-active-digits', 3795, '#00e396');
+  renderFlipDigits('kpi-net-digits', 2386, '#9b6dff');
+  renderFlipDigits('kpi-phone-digits', 2305, '#ff6b35');
+
+  initCharts();
+  initMap();
+  // 数据保持初始化值不变，不再定时刷新
+  // startDataRefreshLoop();
+});
+
+window.addEventListener('resize', function() {
+  Object.values(chartInstances).forEach(function(c) { if (c && c.resize) c.resize(); });
+});
+</script>
+</body>
+</html>
